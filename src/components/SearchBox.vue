@@ -1,16 +1,25 @@
 <template>
   <!-- 搜索框组件 -->
-  <div ref="searchContainerRef" class="search-container" :class="{ 'search-expanded': isSearchFocused || searchQuery }">
+  <div
+    ref="searchContainerRef"
+    class="search-container"
+    :class="{
+      'search-expanded': props.fullWidth || isSearchFocused || searchQuery,
+      'search-full-width': props.fullWidth
+    }"
+  >
     <div class="search-input-wrapper"
         @click="isSearchFocused = true"
         @mouseenter="isSearchFocused = true"
         @mouseleave="handleSearchMouseLeave">
       <el-icon class="search-icon"><Search /></el-icon>
       <input
+        ref="searchInputRef"
         v-model="searchQuery"
         type="text"
         placeholder="搜索文章..."
         class="search-input"
+        @focus="handleSearchFocus"
         @blur="handleSearchBlur"
         @input="handleSearchInput"
         @keyup.enter="performSearch"
@@ -24,6 +33,7 @@
         v-for="post in searchResults"
         :key="post.id"
         class="search-result-item"
+        @mousedown.prevent="goToPost(post.slug)"
         @click.stop="goToPost(post.slug)"
       >
         <div class="result-content">
@@ -45,7 +55,7 @@
  * 搜索框组件
  * 功能：文章搜索、搜索结果显示
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, CircleClose } from '@element-plus/icons-vue'
 import { postApi } from '../api/post'
@@ -53,6 +63,19 @@ import type { Post } from '../types'
 
 const router = useRouter()
 const searchContainerRef = ref<HTMLElement | null>(null)
+const searchInputRef = ref<HTMLInputElement | null>(null)
+
+const props = withDefaults(defineProps<{
+  fullWidth?: boolean
+  autoFocus?: boolean
+}>(), {
+  fullWidth: false,
+  autoFocus: false
+})
+
+const emit = defineEmits<{
+  select: [slug: string]
+}>()
 
 // 搜索相关状态
 const searchQuery = ref('')
@@ -80,6 +103,13 @@ const handleClickOutside = (event: MouseEvent) => {
 // 组件挂载时添加mousedown事件监听（使用mousedown确保在click之前执行）
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside)
+
+  if (props.autoFocus) {
+    isSearchFocused.value = true
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
+  }
 })
 
 // 组件卸载时移除事件监听
@@ -131,9 +161,18 @@ const performSearch = async () => {
 /**
  * 处理搜索框失焦
  */
+const handleSearchFocus = () => {
+  isSearchFocused.value = true
+  if (searchQuery.value.trim()) {
+    showSearchResults.value = true
+  }
+}
+
 const handleSearchBlur = () => {
-  isSearchFocused.value = false
-  showSearchResults.value = false
+  window.setTimeout(() => {
+    isSearchFocused.value = false
+    showSearchResults.value = false
+  }, 120)
 }
 
 /**
@@ -158,6 +197,7 @@ const clearSearch = () => {
  */
 const goToPost = (slug: string) => {
   clearSearch()
+  emit('select', slug)
   router.push(`/post/${slug}`)
 }
 </script>
@@ -174,6 +214,11 @@ const goToPost = (slug: string) => {
   width: 300px;
 }
 
+.search-container.search-full-width,
+.search-container.search-full-width.search-expanded {
+  width: 100%;
+}
+
 .search-input-wrapper {
   display: flex;
   align-items: center;
@@ -185,6 +230,7 @@ const goToPost = (slug: string) => {
 }
 
 .search-container.search-expanded .search-input-wrapper {
+  color: #000;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -207,6 +253,10 @@ const goToPost = (slug: string) => {
 }
 
 .search-container.search-expanded .search-input {
+  width: auto;
+}
+
+.search-container.search-full-width .search-input {
   width: auto;
 }
 

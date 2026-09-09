@@ -9,9 +9,9 @@ export interface ApiResponse<T> {
 export interface User {
   id: number
   username: string
-  email: string
+  email?: string | null
   role: string
-  avatar?: string
+  avatar?: string | null
   createdAt: string
 }
 

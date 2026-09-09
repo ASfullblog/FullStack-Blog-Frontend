@@ -1,46 +1,35 @@
 <template>
-  <!-- 主题切换器组件 - 手风琴书签样式固定在页面右侧 -->
-  <div class="theme-bookmark-container" @mouseenter="isExpanded = true" @mouseleave="isExpanded = false">
-    <!-- 主题选项 - 手风琴展开（从下往上） -->
-    <div class="theme-accordion" :class="{ 'expanded': isExpanded }">
+  <!-- 主题切换器组件 - 画板形式，hover时半围绕展开 -->
+  <div class="theme-palette-container" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+    <!-- 画板主体 - 始终显示 -->
+    <div class="palette-main" :class="{ 'expanded': isExpanded }">
+      <span class="palette-icon">🎨</span>
+    </div>
+
+    <!-- 主题选项 - 半围绕画板展开 -->
+    <div class="palette-options">
       <button
-        v-for="(theme, index) in reversedThemes"
+        v-for="(theme, index) in themeStore.availableThemes"
         :key="theme.value"
-        class="theme-option"
+        class="palette-option"
         :class="{
           'active': themeStore.currentTheme === theme.value,
           'locked': !theme.unlocked,
           'show': isExpanded
         }"
-        :style="{ '--delay': index * 0.08 + 's' }"
+        :style="getOptionStyle(index)"
         @click="selectTheme(theme.value, theme.unlocked)"
-        :disabled="!theme.unlocked"
         :title="theme.label + (theme.unlocked ? '' : ' (登录解锁)')"
       >
         <span class="option-icon">{{ theme.icon }}</span>
-        <span class="option-label">{{ theme.label }}</span>
-        <span v-if="!theme.unlocked" class="lock-icon">🔒</span>
       </button>
     </div>
 
-    <!-- 书签头部 - 始终显示 -->
-    <div class="bookmark-tab" :class="{ 'shifted': isExpanded }">
-      <span class="bookmark-icon">🎨</span>
-    </div>
-
-    <!-- 主题切换动画遮罩 -->
-    <div
-      v-if="isTransitioning"
-      class="theme-transition-overlay"
-      :class="[`from-${transitionFrom}`, `to-${transitionTo}`]"
-    >
-      <div class="transition-wave"></div>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useThemeStore, type ThemeType } from '../stores/themeStore'
 import { ElMessage } from 'element-plus'
 
@@ -48,14 +37,40 @@ const themeStore = useThemeStore()
 
 // 展开状态
 const isExpanded = ref(false)
+let closeTimer: ReturnType<typeof setTimeout> | null = null
 
-// 切换动画状态
-const isTransitioning = ref(false)
-const transitionFrom = ref('')
-const transitionTo = ref('')
+const handleMouseEnter = () => {
+  if (closeTimer) {
+    clearTimeout(closeTimer)
+    closeTimer = null
+  }
+  isExpanded.value = true
+}
 
-// 反转主题列表（用于从下往上显示）
-const reversedThemes = computed(() => [...themeStore.availableThemes].reverse())
+const handleMouseLeave = () => {
+  closeTimer = setTimeout(() => {
+    isExpanded.value = false
+  }, 800)
+}
+
+// 计算半围绕展开的位置
+const getOptionStyle = (index: number) => {
+  const total = themeStore.availableThemes.length
+  const startAngle = -90
+  const endAngle = 90
+  const angle = startAngle + (index / (total - 1)) * (endAngle - startAngle)
+  const radius = 50
+
+  const rad = (angle * Math.PI) / 180
+  const x = -Math.abs(Math.cos(rad) * radius)
+  const y = Math.sin(rad) * radius
+
+  return {
+    '--x': `${x}px`,
+    '--y': `${y}px`,
+    '--delay': `${index * 0.05}s`
+  }
+}
 
 // 选择主题
 const selectTheme = async (theme: ThemeType, unlocked: boolean) => {
@@ -64,264 +79,186 @@ const selectTheme = async (theme: ThemeType, unlocked: boolean) => {
     return
   }
 
-  // 如果点击的是当前主题，不执行切换
   if (themeStore.currentTheme === theme) {
     return
   }
 
-  // 设置动画参数
-  transitionFrom.value = themeStore.currentTheme
-  transitionTo.value = theme
-  isTransitioning.value = true
-
-  // 延迟执行主题切换，让动画先开始
-  setTimeout(() => {
-    const success = themeStore.setTheme(theme)
-    if (success) {
-      ElMessage.success(`已切换到${themeStore.availableThemes.find(t => t.value === theme)?.label}`)
-    }
-  }, 300)
-
-  // 动画结束后移除遮罩
-  setTimeout(() => {
-    isTransitioning.value = false
-  }, 800)
+  const success = themeStore.setTheme(theme)
+  if (success) {
+    ElMessage.success(`已切换到${themeStore.availableThemes.find(t => t.value === theme)?.label}`)
+  }
 }
 </script>
 
 <style scoped>
-/* 书签容器 */
-.theme-bookmark-container {
+/* 画板容器 - 固定在右侧 */
+.theme-palette-container {
   position: fixed;
-  right: 0;
-  top: 10%;
-  transform: translateY(-0%);
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 1000;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: flex-end;
-  /* 宽度自适应内容，避免占据多余空间 */
-  width: fit-content;
-  max-width: 200px;
+  width: 60px;
+  height: 60px;
+  will-change: transform;
 }
 
-/* 手风琴主题选项容器 */
-.theme-accordion {
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: flex-end;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-/* 主题选项 - 手风琴样式 */
-.theme-option {
+/* 画板主体 - 田园风格配色 */
+.palette-main {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%) translateZ(0);
+  border-radius: 50%;
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #FDE047 0%, #FACC15 30%, #A3E635 70%, #4ADE80 100%);
+  box-shadow:
+    0 4px 15px rgba(250, 204, 21, 0.4),
+    0 0 0 3px rgba(255, 255, 255, 0.3) inset,
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 14px;
-  background: var(--card-bg, white);
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-right: none;
-  border-radius: 8px 0 0 8px;
-  cursor: pointer;
-  box-shadow: -2px 2px 8px var(--shadow-color, rgba(0, 0, 0, 0.1));
-  opacity: 0;
-  transform: translateX(30px) scale(0.8);
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  overflow: hidden;
+  justify-content: center;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  white-space: nowrap;
+  z-index: 10;
+  will-change: transform;
 }
 
-.theme-option.show {
-  opacity: 1;
-  transform: translateX(0) scale(1);
-  max-height: 50px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+.palette-main:hover {
+  transform: translateY(-50%) translateZ(0) scale(1.1);
+  box-shadow:
+    0 6px 20px rgba(250, 204, 21, 0.5),
+    0 0 0 4px rgba(255, 255, 255, 0.4) inset;
+}
+
+.palette-main.expanded {
+  transform: translateY(-50%) translateZ(0) scale(0.95);
+}
+
+.palette-icon {
+  font-size: 28px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* 主题选项容器 */
+.palette-options {
+  position: absolute;
+  right: 26px;
+  top: 50%;
+  transform: translateY(-50%) translateZ(0);
+  width: 0;
+  height: 0;
+  will-change: contents;
+}
+
+/* 主题选项 - 半围绕画板展开 */
+.palette-option {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translate(0, -50%) scale(0) translateZ(0);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   transition-delay: var(--delay);
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCD34D 100%);
+  box-shadow:
+    0 3px 10px rgba(251, 191, 36, 0.3),
+    0 0 0 2px rgba(255, 255, 255, 0.5) inset;
+  will-change: transform, opacity;
 }
 
-.theme-option:hover:not(:disabled) {
-  background: var(--hover-bg, #f3f4f6);
-  border-color: var(--accent-color, #667eea);
-  padding-right: 20px;
-  box-shadow: -4px 4px 12px var(--shadow-color, rgba(0, 0, 0, 0.15));
+.palette-option.show {
+  opacity: 1;
+  transform: translate(var(--x), calc(var(--y) - 50%)) scale(1) translateZ(0);
 }
 
-/* hover时文字和图标同时变色 */
-.theme-option:hover:not(:disabled) .option-label,
-.theme-option:hover:not(:disabled) .option-icon {
-  color: var(--accent-color, #667eea);
+.palette-option:hover:not(:disabled) {
+  transform: translate(var(--x), calc(var(--y) - 50%)) scale(1.15) translateZ(0);
+  box-shadow:
+    0 5px 15px rgba(251, 191, 36, 0.5),
+    0 0 0 3px rgba(255, 255, 255, 0.6) inset;
+  z-index: 20;
 }
 
-.theme-option.active {
-  background: var(--bg-tertiary, #eff6ff);
-  border-color: var(--accent-color, #667eea);
+.palette-option.active {
+  background: linear-gradient(135deg, #86EFAC 0%, #4ADE80 50%, #22C55E 100%);
+  box-shadow:
+    0 3px 12px rgba(74, 222, 128, 0.4),
+    0 0 0 2px rgba(255, 255, 255, 0.6) inset;
 }
 
-/* active状态文字和图标同时变色 */
-.theme-option.active .option-label,
-.theme-option.active .option-icon {
-  color: var(--accent-color, #667eea);
-}
-
-.theme-option.locked {
-  opacity: 0.5;
+.palette-option.locked {
+  opacity: 0.4;
   cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
 .option-icon {
-  font-size: 16px;
-  color: var(--text-primary, #374151);
-  transition: color 0.2s ease;
+  font-size: 20px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
 }
 
-.option-label {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary, #374151);
-  transition: color 0.2s ease;
-}
-
-.lock-icon {
-  font-size: 10px;
-}
-
-/* 书签标签 - 始终显示的部分 */
-.bookmark-tab {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 12px 10px;
-  border-radius: 8px 0 0 8px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s ease;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  position: relative;
-}
-
-.bookmark-tab.shifted {
-  transform: translateY(-10px);
-}
-
-.bookmark-tab:hover {
-  padding-right: 14px;
-  box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.bookmark-icon {
-  font-size: 18px;
-  writing-mode: horizontal-tb;
-}
-
-.bookmark-text {
-  font-size: 12px;
-  font-weight: 500;
-  writing-mode: horizontal-tb;
-}
-
-/* 主题切换动画遮罩 */
-.theme-transition-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 9999;
-  overflow: hidden;
-}
-
-.transition-wave {
-  position: absolute;
-  top: 45%;
-  right: 0;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  animation: expandWave 0.8s ease-out forwards;
-}
-
-/* 从不同主题切换的动画颜色 */
-.from-light .transition-wave {
-  background: #f8fafc;
-}
-
-.from-dark .transition-wave {
-  background: #0a0a0f;
-}
-
-.from-dusk .transition-wave {
-  background: #1a0f0a;
-}
-
-.from-happy .transition-wave {
-  background: #fef9c3;
-}
-
-.to-light .transition-wave {
-  background: radial-gradient(circle, #f8fafc 0%, #e2e8f0 100%);
-}
-
-.to-dark .transition-wave {
-  background: radial-gradient(circle, #1e1e2e 0%, #0a0a0f 100%);
-}
-
-.to-dusk .transition-wave {
-  background: radial-gradient(circle, #fb923c 0%, #f97316 50%, #1a0f0a 100%);
-}
-
-.to-happy .transition-wave {
-  background: radial-gradient(circle, #fde047 0%, #fbbf24 50%, #f59e0b 100%);
-}
-
-@keyframes expandWave {
-  0% {
-    transform: scale(0);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(50);
-    opacity: 0;
-  }
-}
-
-/* 响应式 - 移动端 */
+/* 响应式 - 移动端简约样式 */
 @media (max-width: 768px) {
-  .theme-bookmark-container {
-    top: 40%;
+  .theme-palette-container {
+    right: 12px;
+    top: auto;
+    bottom: 120px;
+    transform: none;
+    width: 40px;
+    height: 40px;
   }
 
-  .bookmark-tab {
-    padding: 10px 8px;
+  .palette-main {
+    width: 40px;
+    height: 40px;
+    background: var(--card-bg);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    border: 1px solid var(--border-color);
   }
 
-  .bookmark-icon {
+  .palette-main:hover {
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 2px 8px var(--shadow-color);
+  }
+
+  .palette-icon {
+    font-size: 20px;
+  }
+
+  .palette-options {
+    right: 20px;
+  }
+
+  .palette-option {
+    width: 32px;
+    height: 32px;
+    background: var(--card-bg);
+    box-shadow: 0 2px 6px var(--shadow-color);
+    border: 1px solid var(--border-color);
+  }
+
+  .palette-option:hover:not(:disabled) {
+    box-shadow: 0 2px 6px var(--shadow-color);
+  }
+
+  .palette-option.active {
+    background: var(--bg-secondary);
+    box-shadow: 0 2px 6px var(--shadow-color);
+  }
+
+  .option-icon {
     font-size: 16px;
-  }
-
-  .theme-option {
-    padding: 8px 12px;
-  }
-
-  .theme-option.show {
-    max-height: 44px;
-    padding-top: 8px;
-    padding-bottom: 8px;
-  }
-
-  .option-label {
-    font-size: 12px;
   }
 }
 </style>

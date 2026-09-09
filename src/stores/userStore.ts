@@ -1,6 +1,16 @@
 import { defineStore } from 'pinia'
 import type { User } from '../types'
 
+type StoredUser = Pick<User, 'id' | 'username' | 'role' | 'avatar' | 'createdAt'>
+
+const toStoredUser = (user: User): StoredUser => ({
+  id: user.id,
+  username: user.username,
+  role: user.role,
+  avatar: user.avatar ?? null,
+  createdAt: user.createdAt
+})
+
 // 用户登录状态存储
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -19,7 +29,7 @@ export const useUserStore = defineStore('user', {
       this.user = user
       this.token = token
       localStorage.setItem('token', token)
-      localStorage.setItem('user', JSON.stringify(user))
+      localStorage.setItem('user', JSON.stringify(toStoredUser(user)))
     },
 
     // 登出
@@ -33,7 +43,7 @@ export const useUserStore = defineStore('user', {
     // 设置用户信息
     setUser(user: User) {
       this.user = user
-      localStorage.setItem('user', JSON.stringify(user))
+      localStorage.setItem('user', JSON.stringify(toStoredUser(user)))
     },
 
     // 初始化用户信息
@@ -41,7 +51,7 @@ export const useUserStore = defineStore('user', {
       const savedUser = localStorage.getItem('user')
       if (savedUser) {
         try {
-          this.user = JSON.parse(savedUser)
+          this.user = JSON.parse(savedUser) as User
         } catch (error) {
           console.error('Failed to parse saved user:', error)
         }

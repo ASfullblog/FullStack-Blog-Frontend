@@ -29,6 +29,7 @@ import { useUserStore } from '../../stores/userStore'
 import { authApi } from '../../api/auth'
 import { ElMessage } from 'element-plus'
 import { useThemeStore } from '../../stores/themeStore'
+import { clearAuthRedirectFlag } from '../../utils/auth'
 
 // 响应式数据
 const loginFormRef = ref()
@@ -36,6 +37,8 @@ const loading = ref(false)
 const userStore = useUserStore()
 const themeStore = useThemeStore()
 const router = useRouter()
+
+clearAuthRedirectFlag()
 
 // 登录表单
 const loginForm = reactive({
@@ -69,7 +72,6 @@ const handleLogin = async () => {
         
         // 存储用户信息和token
         userStore.login(user, token)
-        localStorage.setItem('user', JSON.stringify(user))
         
         // 更新主题登录状态（解锁个性情感模式）
         themeStore.setLoginStatus(true)

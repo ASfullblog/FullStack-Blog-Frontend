@@ -34,7 +34,7 @@
 
           <!-- 联系方式 -->
           <div class="contact-section">
-            <a :href="aboutInfo.githubUrl || 'https://github.com/asfre'" target="_blank" class="contact-item">
+            <a v-if="aboutInfo.githubUrl" :href="aboutInfo.githubUrl" target="_blank" class="contact-item">
               <div class="contact-icon-wrapper github">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -42,7 +42,7 @@
               </div>
               <span class="contact-text">GitHub</span>
             </a>
-            <a :href="`tencent://message/?uin=${aboutInfo.qqNumber || '414898182'}`" class="contact-item">
+            <a v-if="aboutInfo.qqNumber" :href="`tencent://message/?uin=${aboutInfo.qqNumber}`" class="contact-item">
               <div class="contact-icon-wrapper qq">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12.003 2c-2.265 0-6.29 1.364-6.29 7.325v1.195S3.55 14.96 3.55 17.474c0 .665.17 1.025.281 1.025.114 0 .902-.484 1.748-2.072 0 0-.18 2.197 1.904 3.967 0 0-1.77.495-1.77 1.182 0 .686 4.078.43 6.29.43 2.21 0 6.287.257 6.287-.43 0-.687-1.768-1.182-1.768-1.182 2.085-1.77 1.905-3.967 1.905-3.967.845 1.588 1.634 2.072 1.746 2.072.111 0 .283-.36.283-1.025 0-2.514-2.164-6.954-2.164-6.954V9.325C18.29 3.364 14.268 2 12.003 2z"/>
@@ -50,7 +50,7 @@
               </div>
               <span class="contact-text">QQ</span>
             </a>
-            <a :href="`mailto:${aboutInfo.email || 'admin@example.com'}`" class="contact-item">
+            <a v-if="aboutInfo.email" :href="`mailto:${aboutInfo.email}`" class="contact-item">
               <div class="contact-icon-wrapper email">
                 <el-icon :size="20"><Message /></el-icon>
               </div>
@@ -76,7 +76,7 @@
           </div>
 
           <!-- 足迹 -->
-          <div class="tags-section">
+          <!-- <div class="tags-section">
             <div class="section-header-row">
               <h3 class="section-subtitle">足迹</h3>
             </div>
@@ -90,23 +90,34 @@
                 {{ place }}
               </span>
             </div>
-          </div>
+          </div> -->
 
-          <!-- 词云图 -->
+          <!-- 词云图 - 3D球体形式，支持鼠标/手势旋转 -->
           <div class="wordcloud-section">
             <h3 class="section-subtitle">个人词云</h3>
-            <div class="wordcloud-container">
+            <div
+              ref="wordcloudContainer"
+              class="wordcloud-container"
+              @mousedown="handleMouseDown"
+              @mousemove="handleMouseMove"
+              @mouseup="handleMouseUp"
+              @mouseleave="handleMouseUp"
+              @touchstart="handleTouchStart"
+              @touchmove="handleTouchMove"
+              @touchend="handleTouchEnd"
+            >
               <div
                 v-for="(word, index) in wordCloudData"
                 :key="index"
                 class="wordcloud-item"
+                :class="{ 'is-visible': word.visible }"
                 :style="{
                   fontSize: word.size + 'px',
                   color: word.color,
-                  left: word.x + '%',
-                  top: word.y + '%',
-                  transform: 'translate(-50%, -50%) rotate(' + word.rotate + 'deg)',
-                  animationDelay: word.delay + 's'
+                  transform: `translate(-50%, -50%) translate3d(${word.x3d}px, ${word.y3d}px, ${word.z3d}px) scale(${word.scale})`,
+                  opacity: word.opacity,
+                  zIndex: word.zIndex,
+                  pointerEvents: word.visible ? 'auto' : 'none'
                 }"
               >
                 {{ word.text }}
@@ -140,7 +151,7 @@
  * 关于我页面
  * 功能：展示博主个人信息、技术栈、足迹、联系方式等
  */
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { Message } from '@element-plus/icons-vue'
 import { getBloggerInfo } from '../api/user'
 import QuotesSection from '../components/QuotesSection.vue'
@@ -173,69 +184,324 @@ const handleAvatarError = () => {
   userAvatar.value = fallbackAvatar
 }
 
-// 词云数据 - 从真实数据生成
-const wordCloudData = ref<Array<{
+// 3D球体词云数据类型
+interface WordCloudItem {
   text: string
   size: number
   color: string
-  x: number
-  y: number
-  rotate: number
-  delay: number
-}>>([])
+  // 原始球面角度（用于旋转计算）- 保存初始位置
+  theta: number // 极角
+  phi: number   // 方位角
+  // 显示属性
+  x3d: number   // 当前3D坐标X
+  y3d: number   // 当前3D坐标Y
+  z3d: number   // 当前3D坐标Z
+  scale: number
+  opacity: number
+  zIndex: number
+  visible: boolean
+}
+
+// 词云数据 - 3D球体形式
+const wordCloudData = ref<WordCloudItem[]>([])
+const wordcloudContainer = ref<HTMLElement | null>(null)
+
+// 3D球体旋转状态
+const sphereState = ref({
+  rotationX: 0, // X轴旋转角度
+  rotationY: 0, // Y轴旋转角度
+  isDragging: false,
+  lastMouseX: 0,
+  lastMouseY: 0,
+  velocityX: 0,
+  velocityY: 0,
+  autoRotate: true,
+  radius: 80 // 球体半径（像素）
+})
+
+// 动画帧ID
+let animationFrameId: number | null = null
 
 /**
- * 生成随机颜色
- * 功能：生成鲜艳的随机颜色
- * @returns 十六进制颜色字符串
+ * 获取词云颜色 - 2025年流行渐变色系
+ * 功能：返回预设的现代感配色方案
+ * @param index 索引用于循环取色
+ * @returns 颜色字符串
  */
-const getRandomColor = (): string => {
-  const hue = Math.floor(Math.random() * 360)
-  const saturation = 60 + Math.floor(Math.random() * 30) // 60-90%
-  const lightness = 45 + Math.floor(Math.random() * 20) // 45-65%
-  return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+const getWordCloudColor = (index: number): string => {
+  // 2025年流行的渐变色系 - 科技感/活力感配色
+  const colorSchemes = [
+    // 霓虹紫粉系
+    '#8B5CF6', '#A855F7', '#D946EF', '#EC4899',
+    // 活力橙黄系
+    '#F97316', '#FBBF24', '#F59E0B', '#EAB308',
+    // 清新青绿系
+    '#06B6D4', '#14B8A6', '#10B981', '#22C55E',
+    // 深海蓝系
+    '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7',
+    // 珊瑚红系
+    '#EF4444', '#F97316', '#FB923C', '#FCA5A5'
+  ]
+  return colorSchemes[index % colorSchemes.length]
 }
 
 /**
- * 生成词云数据
- * 功能：根据技术栈和足迹生成词云
+ * 生成3D球体词云数据
+ * 功能：根据技术栈和足迹在球面上均匀分布词语
  */
 const generateWordCloud = () => {
-  const words: Array<{
-    text: string
-    size: number
-    color: string
-    x: number
-    y: number
-    rotate: number
-    delay: number
-  }> = []
+  const words: WordCloudItem[] = []
 
   // 合并技术栈和足迹作为词云数据源
-  const techWords = aboutInfo.value.techStack.length > 0
-    ? aboutInfo.value.techStack
-    : ['Vue.js', 'Node.js', 'TypeScript', 'JavaScript']
-
-  const placeWords = aboutInfo.value.visitedProvinces.length > 0
-    ? aboutInfo.value.visitedProvinces
-    : ['长沙市', '娄底市', '衡阳市', '耒阳市', '深圳市', '广州市']
-
+  const techWords = aboutInfo.value.techStack || []
+  const placeWords = aboutInfo.value.visitedProvinces || []
   const allWords = [...techWords, ...placeWords]
 
-  // 生成词云项
+  // 如果没有数据，显示空状态
+  if (allWords.length === 0) {
+    wordCloudData.value = []
+    return
+  }
+
+  const total = allWords.length
+  const radius = sphereState.value.radius
+
+  // 使用黄金角螺旋算法在球面上均匀分布点
   allWords.forEach((text, index) => {
+    // 黄金角螺旋分布 - 确保点在球面上均匀分布
+    const phi = Math.acos(1 - 2 * (index + 0.5) / total) // 极角 0 ~ π
+    const theta = Math.PI * (3 - Math.sqrt(5)) * index    // 方位角（黄金角）
+
+    // 根据词的重要性计算大小
+    const importance = 1 - (index / total)
+    const size = Math.floor(12 + importance * 16) // 12-28px
+
+    // 计算初始3D坐标
+    const x0 = radius * Math.sin(phi) * Math.cos(theta)
+    const y0 = radius * Math.sin(phi) * Math.sin(theta)
+    const z0 = radius * Math.cos(phi)
+
     words.push({
       text,
-      size: 14 + Math.floor(Math.random() * 16), // 14-30px 随机大小
-      color: getRandomColor(),
-      x: 10 + Math.floor(Math.random() * 80), // 10-90% 随机位置
-      y: 10 + Math.floor(Math.random() * 80), // 10-90% 随机位置
-      rotate: -20 + Math.floor(Math.random() * 40), // -20 到 20 度随机旋转
-      delay: index * 0.1 // 依次延迟动画
+      size,
+      color: getWordCloudColor(index),
+      theta,
+      phi,
+      x3d: x0,
+      y3d: y0,
+      z3d: z0,
+      scale: 1,
+      opacity: 1,
+      zIndex: 0,
+      visible: true
     })
   })
 
   wordCloudData.value = words
+  // 开始自动旋转动画
+  startAutoRotate()
+}
+
+/**
+ * 更新词云3D位置
+ * 功能：根据当前旋转角度计算每个词的显示位置和属性
+ * 注意：每次从原始球面角度重新计算，避免坐标累积
+ */
+const updateWordCloudPositions = () => {
+  const { rotationX, rotationY, radius } = sphereState.value
+  const radX = (rotationX * Math.PI) / 180
+  const radY = (rotationY * Math.PI) / 180
+
+  wordCloudData.value = wordCloudData.value.map(word => {
+    // 从原始球面角度计算初始3D坐标
+    const x0 = radius * Math.sin(word.phi) * Math.cos(word.theta)
+    const y0 = radius * Math.sin(word.phi) * Math.sin(word.theta)
+    const z0 = radius * Math.cos(word.phi)
+
+    // 应用旋转变换
+    // 先绕Y轴旋转
+    let x = x0 * Math.cos(radY) - z0 * Math.sin(radY)
+    let z = x0 * Math.sin(radY) + z0 * Math.cos(radY)
+    let y = y0
+
+    // 再绕X轴旋转
+    const newY = y * Math.cos(radX) - z * Math.sin(radX)
+    const newZ = y * Math.sin(radX) + z * Math.cos(radX)
+    y = newY
+    z = newZ
+
+    // 计算显示属性
+    // z值决定缩放和透明度（透视效果）
+    const normalizedZ = (z + radius) / (2 * radius) // 归一化到 0-1
+    const scale = 0.6 + normalizedZ * 0.6 // 0.6 ~ 1.2
+    const opacity = 0.4 + normalizedZ * 0.6 // 0.4 ~ 1.0
+    const zIndex = Math.floor(normalizedZ * 100)
+
+    // 只显示球体前方的词（z > -radius/2）
+    const visible = z > -radius * 0.3
+
+    return {
+      ...word,
+      x3d: x,
+      y3d: y,
+      z3d: z,
+      scale,
+      opacity,
+      zIndex,
+      visible
+    }
+  })
+}
+
+/**
+ * 开始自动旋转动画
+ * 功能：使用requestAnimationFrame实现平滑的自动旋转
+ */
+const startAutoRotate = () => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
+
+  const animate = () => {
+    if (!sphereState.value.isDragging && sphereState.value.autoRotate) {
+      // 应用速度衰减
+      sphereState.value.velocityX *= 0.95
+      sphereState.value.velocityY *= 0.95
+
+      // 自动旋转（当速度很小时）
+      if (Math.abs(sphereState.value.velocityX) < 0.05 && Math.abs(sphereState.value.velocityY) < 0.05) {
+        sphereState.value.rotationY += 0.05 // 自动绕Y轴旋转 - 更慢的速度
+      } else {
+        // 应用惯性 - 降低惯性速度
+        sphereState.value.rotationX += sphereState.value.velocityX * 0.5
+        sphereState.value.rotationY += sphereState.value.velocityY * 0.5
+      }
+
+      // 限制X轴旋转角度（避免翻转）
+      sphereState.value.rotationX = Math.max(-90, Math.min(90, sphereState.value.rotationX))
+
+      updateWordCloudPositions()
+    }
+
+    animationFrameId = requestAnimationFrame(animate)
+  }
+
+  animate()
+}
+
+/**
+ * 停止自动旋转
+ */
+const stopAutoRotate = () => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+}
+
+// ========== 鼠标事件处理 ==========
+
+/**
+ * 处理鼠标按下事件
+ * 功能：开始拖拽旋转
+ */
+const handleMouseDown = (e: MouseEvent) => {
+  sphereState.value.isDragging = true
+  sphereState.value.autoRotate = false
+  sphereState.value.lastMouseX = e.clientX
+  sphereState.value.lastMouseY = e.clientY
+  sphereState.value.velocityX = 0
+  sphereState.value.velocityY = 0
+}
+
+/**
+ * 处理鼠标移动事件
+ * 功能：实时更新旋转角度
+ */
+const handleMouseMove = (e: MouseEvent) => {
+  if (!sphereState.value.isDragging) return
+
+  const deltaX = e.clientX - sphereState.value.lastMouseX
+  const deltaY = e.clientY - sphereState.value.lastMouseY
+
+  // 计算旋转速度（用于惯性效果）
+  sphereState.value.velocityY = deltaX * 0.3
+  sphereState.value.velocityX = -deltaY * 0.3
+
+  // 更新旋转角度
+  sphereState.value.rotationY += deltaX * 0.5
+  sphereState.value.rotationX -= deltaY * 0.5
+
+  // 限制X轴旋转角度
+  sphereState.value.rotationX = Math.max(-90, Math.min(90, sphereState.value.rotationX))
+
+  // 更新位置
+  updateWordCloudPositions()
+
+  // 记录当前位置
+  sphereState.value.lastMouseX = e.clientX
+  sphereState.value.lastMouseY = e.clientY
+}
+
+/**
+ * 处理鼠标松开事件
+ * 功能：结束拖拽，启用惯性动画
+ */
+const handleMouseUp = () => {
+  if (sphereState.value.isDragging) {
+    sphereState.value.isDragging = false
+    sphereState.value.autoRotate = true
+  }
+}
+
+// ========== 触摸事件处理（移动端支持） ==========
+
+/**
+ * 处理触摸开始事件
+ */
+const handleTouchStart = (e: TouchEvent) => {
+  if (e.touches.length === 1) {
+    sphereState.value.isDragging = true
+    sphereState.value.autoRotate = false
+    sphereState.value.lastMouseX = e.touches[0].clientX
+    sphereState.value.lastMouseY = e.touches[0].clientY
+    sphereState.value.velocityX = 0
+    sphereState.value.velocityY = 0
+  }
+}
+
+/**
+ * 处理触摸移动事件
+ */
+const handleTouchMove = (e: TouchEvent) => {
+  if (!sphereState.value.isDragging || e.touches.length !== 1) return
+
+  e.preventDefault() // 防止页面滚动
+
+  const deltaX = e.touches[0].clientX - sphereState.value.lastMouseX
+  const deltaY = e.touches[0].clientY - sphereState.value.lastMouseY
+
+  sphereState.value.velocityY = deltaX * 0.3
+  sphereState.value.velocityX = -deltaY * 0.3
+
+  sphereState.value.rotationY += deltaX * 0.5
+  sphereState.value.rotationX -= deltaY * 0.5
+  sphereState.value.rotationX = Math.max(-90, Math.min(90, sphereState.value.rotationX))
+
+  updateWordCloudPositions()
+
+  sphereState.value.lastMouseX = e.touches[0].clientX
+  sphereState.value.lastMouseY = e.touches[0].clientY
+}
+
+/**
+ * 处理触摸结束事件
+ */
+const handleTouchEnd = () => {
+  if (sphereState.value.isDragging) {
+    sphereState.value.isDragging = false
+    sphereState.value.autoRotate = true
+  }
 }
 
 // 获取标签样式
@@ -334,6 +600,11 @@ const fetchAboutInfo = async () => {
 onMounted(() => {
   fetchAboutInfo()
 })
+
+// 页面卸载时清理动画
+onUnmounted(() => {
+  stopAutoRotate()
+})
 </script>
 
 <style scoped>
@@ -377,9 +648,16 @@ onMounted(() => {
 
 /* 左侧卡片 */
 .about-left {
-  position: sticky;
-  top: 20px;
+  position: relative;
   height: fit-content;
+}
+
+/* 桌面端使用 sticky 定位 */
+@media (min-width: 1024px) {
+  .about-left {
+    position: sticky;
+    top: 20px;
+  }
 }
 
 .profile-card {
@@ -519,40 +797,78 @@ onMounted(() => {
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
-/* 词云图 */
+/* 词云图 - 3D球体设计 */
 .wordcloud-section {
   margin-bottom: 0;
 }
 
+/* 词云容器 - 3D球体场景 */
 .wordcloud-container {
   position: relative;
-  height: 200px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
+  height: 220px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(99, 102, 241, 0.08) 0%,
+    rgba(168, 85, 247, 0.05) 40%,
+    transparent 70%
+  );
+  border-radius: 16px;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: grab;
+  user-select: none;
+  touch-action: none; /* 防止触摸滚动 */
+  perspective: 1000px; /* 3D透视 */
 }
 
+.wordcloud-container:active {
+  cursor: grabbing;
+}
+
+/* 3D球体词云项 */
 .wordcloud-item {
   position: absolute;
-  font-weight: 600;
+  left: 50%;
+  top: 50%;
+  font-weight: 700;
   white-space: nowrap;
-  animation: float 6s ease-in-out infinite;
-  cursor: default;
-  transition: transform 0.3s ease;
+  cursor: pointer;
+  transition: transform 0.1s linear, opacity 0.1s linear;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  letter-spacing: 0.3px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  will-change: transform, opacity;
+  /* 缩小hover响应范围 */
+  pointer-events: none; /* 默认不响应鼠标事件 */
 }
 
-.wordcloud-item:hover {
-  transform: translate(-50%, -50%) scale(1.2) !important;
-  z-index: 10;
+/* 只有可见的词才响应hover */
+.wordcloud-item.is-visible {
+  pointer-events: auto;
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translate(-50%, -50%) rotate(var(--rotate, 0deg)) translateY(0);
-  }
-  50% {
-    transform: translate(-50%, -50%) rotate(var(--rotate, 0deg)) translateY(-10px);
-  }
+/* 悬停效果 - 优化阴影透明度和放大效果 */
+.wordcloud-item.is-visible:hover {
+  /* 降低阴影透明度，使用rgba让字更清晰 */
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.8),
+    0 0 12px currentColor,
+    0 0 20px rgba(currentColor, 0.4);
+  filter: brightness(1.2);
+  z-index: 1000 !important;
+}
+
+/* 词云空状态 */
+.wordcloud-container:empty::after {
+  content: '暂无数据';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  opacity: 0.6;
 }
 
 /* 右侧内容 */

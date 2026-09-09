@@ -10,6 +10,8 @@
         <div class="ring ring-1"></div>
         <div class="ring ring-2"></div>
         <div class="ring ring-3"></div>
+        <div class="ring ring-4"></div>
+        <div class="ring ring-5"></div>
       </div>
     </div>
 
@@ -78,12 +80,33 @@
               已有 <strong>{{ userCount }}</strong> 位创作者在此安家
             </span>
           </div>
+
+          <!-- 移动端：立刻进入按钮 -->
+          <button class="mobile-enter-btn" @click="showFormDrawer = true">
+            <span>立刻进入</span>
+            <el-icon><ArrowRight /></el-icon>
+          </button>
         </div>
       </div>
 
       <!-- 右侧区域（60%）- 表单卡片 -->
-      <div class="form-section">
+      <div class="form-section" :class="{ 'drawer-open': showFormDrawer }">
         <div class="form-card">
+          <button type="button" class="back-home-btn" @click="goHome">
+            <el-icon><House /></el-icon>
+            <span>返回首页</span>
+          </button>
+          <!-- 移动端抽屉关闭控件 - 可拖动/点击关闭 -->
+          <div
+            class="drawer-handle"
+            @click="showFormDrawer = false"
+            @touchstart="handleTouchStart"
+            @touchmove="handleTouchMove"
+            @touchend="handleTouchEnd"
+          >
+            <div class="handle-bar"></div>
+            <span class="handle-text">→</span>
+          </div>
           <!-- 滑动式 Tab -->
           <div class="tab-container">
             <div class="tab-slider" :style="{ transform: isLogin ? 'translateX(0)' : 'translateX(100%)' }"></div>
@@ -104,14 +127,16 @@
           </div>
 
           <!-- 登录表单 -->
-          <form v-if="isLogin" @submit.prevent="handleLogin" class="auth-form">
+          <form v-if="isLogin" @submit.prevent="handleLogin" class="auth-form" novalidate>
             <!-- 用户名 -->
             <div class="form-field" :class="{ focused: focusedField === 'loginUsername', filled: loginForm.username }">
               <div class="input-wrapper">
                 <el-icon class="field-icon"><User /></el-icon>
                 <input
                   v-model="loginForm.username"
+                  name="login-username"
                   type="text"
+                  autocomplete="username"
                   required
                   @focus="focusedField = 'loginUsername'"
                   @blur="focusedField = ''"
@@ -126,7 +151,9 @@
                 <el-icon class="field-icon"><Lock /></el-icon>
                 <input
                   v-model="loginForm.password"
+                  name="login-password"
                   :type="showLoginPassword ? 'text' : 'password'"
+                  autocomplete="current-password"
                   required
                   @focus="focusedField = 'loginPassword'"
                   @blur="focusedField = ''"
@@ -137,6 +164,8 @@
                   <el-icon v-else><Hide /></el-icon>
                 </span>
               </div>
+              <!-- 占位区域，保持与注册表单高度一致 -->
+              <span class="placeholder-text">&nbsp;</span>
             </div>
 
             <!-- 记住我 -->
@@ -163,14 +192,16 @@
           </form>
 
           <!-- 注册表单 -->
-          <form v-else @submit.prevent="handleRegister" class="auth-form">
+          <form v-else @submit.prevent="handleRegister" class="auth-form" novalidate>
             <!-- 用户名 -->
             <div class="form-field" :class="{ focused: focusedField === 'regUsername', filled: registerForm.username }">
               <div class="input-wrapper">
                 <el-icon class="field-icon"><User /></el-icon>
                 <input
                   v-model="registerForm.username"
+                  name="register-username"
                   type="text"
+                  autocomplete="username"
                   required
                   @focus="focusedField = 'regUsername'"
                   @blur="focusedField = ''"
@@ -192,7 +223,13 @@
                 <el-icon class="field-icon"><Message /></el-icon>
                 <input
                   v-model="registerForm.email"
+                  name="register-email"
                   type="email"
+                  inputmode="email"
+                  autocomplete="email"
+                  autocapitalize="none"
+                  autocorrect="off"
+                  spellcheck="false"
                   required
                   @focus="focusedField = 'regEmail'"
                   @blur="validateEmail"
@@ -208,7 +245,9 @@
                 <el-icon class="field-icon"><Lock /></el-icon>
                 <input
                   v-model="registerForm.password"
+                  name="register-password"
                   :type="showRegPassword ? 'text' : 'password'"
+                  autocomplete="new-password"
                   required
                   @focus="focusedField = 'regPassword'"
                   @blur="focusedField = ''"
@@ -255,11 +294,12 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Message, View, Hide } from '@element-plus/icons-vue'
+import { User, Lock, Message, View, Hide, ArrowRight, Close, House } from '@element-plus/icons-vue'
 import { authApi } from '../../api/auth'
 import { getUserCount } from '../../api/user'
 import { useUserStore } from '../../stores/userStore'
 import { useThemeStore } from '../../stores/themeStore'
+import { clearAuthRedirectFlag } from '../../utils/auth'
 
 // ===== 响应式数据 =====
 const isLogin = ref(true)
@@ -269,6 +309,41 @@ const userCount = ref(0)
 const showLoginPassword = ref(false)
 const showRegPassword = ref(false)
 const emailError = ref(false)
+const showFormDrawer = ref(false) // 控制移动端表单抽屉显示
+
+// ===== 触摸滑动相关变量 =====
+let touchStartX = 0
+let touchCurrentX = 0
+const minSwipeDistance = 80 // 最小滑动距离触发关闭
+
+/**
+ * 处理触摸开始
+ */
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartX = e.touches[0].clientX
+  touchCurrentX = touchStartX
+}
+
+/**
+ * 处理触摸移动
+ */
+const handleTouchMove = (e: TouchEvent) => {
+  touchCurrentX = e.touches[0].clientX
+}
+
+/**
+ * 处理触摸结束
+ * 判断滑动距离，从左向右滑动超过阈值则关闭抽屉
+ */
+const handleTouchEnd = () => {
+  const swipeDistance = touchCurrentX - touchStartX
+  if (swipeDistance > minSwipeDistance) {
+    showFormDrawer.value = false
+  }
+  // 重置
+  touchStartX = 0
+  touchCurrentX = 0
+}
 
 // ===== Store 和路由 =====
 const userStore = useUserStore()
@@ -397,6 +472,10 @@ const showContactAdmin = () => {
 /**
  * 处理注册
  */
+const goHome = () => {
+  router.push('/')
+}
+
 const handleRegister = async () => {
   // 验证表单
   if (!registerForm.username || !registerForm.email || !registerForm.password) {
@@ -428,6 +507,7 @@ const handleRegister = async () => {
 
 // 组件挂载时获取用户数量
 onMounted(() => {
+  clearAuthRedirectFlag()
   fetchUserCount()
 })
 </script>
@@ -482,7 +562,8 @@ onMounted(() => {
   height: 400px;
   top: -100px;
   left: -100px;
-  animation: rotate 30s linear infinite;
+  border-color: rgba(100, 149, 237, 0.15);
+  animation: rotate 30s linear infinite, float 8s ease-in-out infinite;
 }
 
 .ring-2 {
@@ -490,8 +571,8 @@ onMounted(() => {
   height: 300px;
   top: 50%;
   left: 5%;
-  border-color: rgba(255, 255, 255, 0.08);
-  animation: rotate 25s linear infinite reverse;
+  border-color: rgba(100, 149, 237, 0.12);
+  animation: rotate 25s linear infinite reverse, float 6s ease-in-out infinite 1s;
 }
 
 .ring-3 {
@@ -499,13 +580,50 @@ onMounted(() => {
   height: 200px;
   bottom: 10%;
   left: 15%;
-  border-color: rgba(255, 255, 255, 0.06);
-  animation: rotate 20s linear infinite;
+  border-color: rgba(100, 149, 237, 0.1);
+  animation: rotate 20s linear infinite, float 10s ease-in-out infinite 2s;
+}
+
+/* 添加更多淡蓝色圆环 */
+.ring-4 {
+  width: 500px;
+  height: 500px;
+  top: 30%;
+  right: -150px;
+  border: 2px solid rgba(100, 149, 237, 0.08);
+  border-radius: 50%;
+  animation: rotate 35s linear infinite reverse, float 12s ease-in-out infinite;
+}
+
+.ring-5 {
+  width: 350px;
+  height: 350px;
+  bottom: 20%;
+  right: 10%;
+  border: 2px solid rgba(100, 149, 237, 0.1);
+  border-radius: 50%;
+  animation: rotate 28s linear infinite, float 9s ease-in-out infinite 1.5s;
 }
 
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* 上下浮动动画 - 模拟手拨动效果 */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-20px) rotate(90deg);
+  }
+  50% {
+    transform: translateY(0) rotate(180deg);
+  }
+  75% {
+    transform: translateY(20px) rotate(270deg);
+  }
 }
 
 /* ===== 主内容区域 ===== */
@@ -597,84 +715,85 @@ onMounted(() => {
   flex: 0 0 60%;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
-/* 玻璃拟态卡片 - 带柔和高斯阴影和紫色光晕 */
+/* 玻璃拟态卡片 - 带边缘高光和玻璃反光 */
 .form-card {
   width: 100%;
   max-width: 480px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
-  border-radius: 28px;
-  padding: 48px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 60px 48px 48px;/** top设置60 */
+  border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow:
-    /* 多层高斯阴影营造柔和深度 */
-    0 2px 4px rgba(0, 0, 0, 0.02),
-    0 8px 16px rgba(0, 0, 0, 0.04),
-    0 16px 32px rgba(0, 0, 0, 0.06),
-    0 32px 64px rgba(0, 0, 0, 0.08),
-    /* 紫色光晕 - 边缘发光效果 */
-    0 0 0 1px rgba(124, 58, 237, 0.08),
-    0 0 40px rgba(124, 58, 237, 0.15),
-    0 0 80px rgba(124, 58, 237, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    /* 外阴影 */
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    /* 顶部柔和高光 */
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
   position: relative;
   overflow: hidden;
 }
 
-/* 卡片顶部渐变装饰线 */
+.back-home-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  z-index: 5;
+}
+
+.back-home-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+/* 卡片顶部玻璃反光效果 */
 .form-card::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
-  opacity: 0.8;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.5) 50%, transparent 100%);
 }
 
-/* 卡片内部微妙光效 */
-.form-card::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(
-    ellipse at 30% 20%,
-    rgba(124, 58, 237, 0.03) 0%,
-    transparent 50%
-  );
-  pointer-events: none;
-}
-
-/* ===== Tab 切换 - 胶囊式设计 ===== */
+/* ===== Tab 切换 - 胶囊式设计（扁平简洁风格） ===== */
 .tab-container {
   display: flex;
   position: relative;
   margin-bottom: 40px;
   padding: 4px;
-  background: rgba(243, 244, 246, 0.8);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 14px;
-  border: 1px solid rgba(229, 231, 235, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-/* 滑动背景块 */
+/* 滑动背景块 - 半透明毛玻璃质感 */
 .tab-slider {
   position: absolute;
   top: 4px;
   left: 4px;
   width: calc(50% - 4px);
   height: calc(100% - 8px);
-  background: white;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 10px;
-  box-shadow:
-    0 1px 3px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -683,7 +802,7 @@ onMounted(() => {
   padding: 14px 0;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
@@ -694,11 +813,11 @@ onMounted(() => {
 }
 
 .tab-btn:hover {
-  color: #4b5563;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .tab-btn.active {
-  color: #7c3aed;
+  color: white;
   font-weight: 600;
 }
 
@@ -707,6 +826,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-height: 380px;
 }
 
 .form-field {
@@ -723,50 +843,51 @@ onMounted(() => {
   position: absolute;
   left: 16px;
   font-size: 20px;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.6);
   transition: color 0.3s ease;
   z-index: 1;
 }
 
 .form-field.focused .field-icon,
 .form-field.filled .field-icon {
-  color: #7c3aed;
+  color: white;
 }
 
+/* 输入框 - 极浅半透明背景 */
 .input-wrapper input {
   width: 100%;
   padding: 16px 44px 16px 48px;
-  border: 1.5px solid #e5e7eb;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 14px;
   font-size: 15px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.08);
   transition: all 0.25s ease;
-  color: #1f2937;
+  color: white;
+}
+
+.input-wrapper input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .input-wrapper input:hover {
-  border-color: #d1d5db;
-  background: white;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .input-wrapper input:focus {
   outline: none;
-  border-color: #7c3aed;
-  background: white;
-  box-shadow:
-    0 0 0 4px rgba(124, 58, 237, 0.08),
-    0 2px 8px rgba(124, 58, 237, 0.1);
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 0 0 20px rgba(124, 58, 237, 0.3);
 }
 
 .form-field.error input {
-  border-color: #ef4444;
-  background: rgba(254, 242, 242, 0.5);
+  border-color: rgba(255, 159, 159, 0.6);
+  background: rgba(255, 159, 159, 0.08);
 }
 
 .form-field.error input:focus {
-  box-shadow:
-    0 0 0 4px rgba(239, 68, 68, 0.08),
-    0 2px 8px rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 0 3px rgba(255, 159, 159, 0.1), 0 0 20px rgba(255, 159, 159, 0.2);
 }
 
 /* Label 浮动效果 */
@@ -775,11 +896,11 @@ onMounted(() => {
   left: 48px;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.5);
   font-size: 15px;
   pointer-events: none;
   transition: all 0.3s ease;
-  background: white;
+  background: transparent;
   padding: 0 4px;
 }
 
@@ -787,15 +908,15 @@ onMounted(() => {
 .form-field.filled .field-label {
   top: 0;
   font-size: 12px;
-  color: #7c3aed;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .form-field.error .field-label {
-  color: #ef4444;
+  color: rgba(255, 159, 159, 0.9);
 }
 
 .required {
-  color: #ef4444;
+  color: rgba(255, 159, 159, 0.9);
 }
 
 /* 眼睛图标 */
@@ -803,14 +924,14 @@ onMounted(() => {
   position: absolute;
   right: 16px;
   cursor: pointer;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.6);
   font-size: 18px;
   transition: color 0.3s ease;
   z-index: 1;
 }
 
 .eye-icon:hover {
-  color: #7c3aed;
+  color: white;
 }
 
 /* 错误提示 */
@@ -818,7 +939,16 @@ onMounted(() => {
   display: block;
   margin-top: 6px;
   font-size: 12px;
-  color: #ef4444;
+  color: rgba(255, 159, 159, 0.9);
+}
+
+/* 占位文本 - 保持表单高度一致 */
+.placeholder-text {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: transparent;
+  min-height: 18px;
 }
 
 /* 密码强度条 */
@@ -832,7 +962,7 @@ onMounted(() => {
 .strength-bar {
   flex: 1;
   height: 4px;
-  background: #e5e7eb;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -844,32 +974,33 @@ onMounted(() => {
 }
 
 .strength-fill.weak {
-  background: #ef4444;
+  background: rgba(255, 159, 159, 0.9);
 }
 
 .strength-fill.medium {
-  background: #f59e0b;
+  background: rgba(255, 206, 84, 0.9);
 }
 
 .strength-fill.strong {
-  background: #10b981;
+  background: rgba(132, 204, 22, 0.9);
 }
 
 .strength-text {
   font-size: 12px;
   font-weight: 500;
+  color: white;
 }
 
 .strength-text.weak {
-  color: #ef4444;
+  color: rgba(255, 159, 159, 0.9);
 }
 
 .strength-text.medium {
-  color: #f59e0b;
+  color: rgba(255, 206, 84, 0.9);
 }
 
 .strength-text.strong {
-  color: #10b981;
+  color: rgba(132, 204, 22, 0.9);
 }
 
 /* 表单选项 */
@@ -885,7 +1016,11 @@ onMounted(() => {
   gap: 8px;
   cursor: pointer;
   font-size: 14px;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.remember-checkbox span:last-child {
+  font-weight: 500;
 }
 
 .remember-checkbox input {
@@ -895,7 +1030,7 @@ onMounted(() => {
 .checkmark {
   width: 18px;
   height: 18px;
-  border: 2px solid #d1d5db;
+  border: 2px solid rgba(255, 255, 255, 0.4);
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -904,8 +1039,8 @@ onMounted(() => {
 }
 
 .remember-checkbox input:checked + .checkmark {
-  background: #7c3aed;
-  border-color: #7c3aed;
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 .remember-checkbox input:checked + .checkmark::after {
@@ -919,81 +1054,47 @@ onMounted(() => {
 
 .forgot-link {
   font-size: 14px;
-  color: #7c3aed;
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .forgot-link:hover {
-  color: #6d28d9;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-/* 提交按钮 - 渐变玻璃质感 */
+/* 提交按钮 - 白色实心背景 + 紫色文字 */
 .submit-btn {
-  width: 100%;
+  width: 80%;
   padding: 16px 24px;
+  margin-top: 10px;
+  margin: 20px auto 1px;
   border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%);
-  background-size: 200% 200%;
-  color: white;
+  border-radius: 30px;
+  background: white;
+  color: #7c3aed;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow:
-    0 4px 6px -1px rgba(124, 58, 237, 0.2),
-    0 2px 4px -2px rgba(124, 58, 237, 0.1),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-    0 8px 20px rgba(124, 58, 237, 0.35);
-  position: relative;
-  overflow: hidden;
-}
-
-/* 按钮光泽效果 */
-.submit-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: left 0.5s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .submit-btn:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.01);
-  background-position: 100% 100%;
-  box-shadow:
-    0 8px 12px -2px rgba(124, 58, 237, 0.3),
-    0 4px 6px -2px rgba(124, 58, 237, 0.15),
-    0 0 0 1px rgba(255, 255, 255, 0.15) inset,
-    0 12px 30px rgba(124, 58, 237, 0.45);
-}
-
-.submit-btn:hover:not(:disabled)::before {
-  left: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
 }
 
 .submit-btn:active:not(:disabled) {
-  transform: translateY(0) scale(0.99);
-  box-shadow:
-    0 2px 4px -1px rgba(124, 58, 237, 0.2),
-    0 1px 2px -1px rgba(124, 58, 237, 0.1),
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  transform: translateY(0);
 }
 
 .submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
 }
 
 /* 按钮加载动画 */
@@ -1015,19 +1116,108 @@ onMounted(() => {
 .switch-hint {
   text-align: center;
   font-size: 14px;
-  color: #6b7280;
+  color: rgba(255, 255, 255, 0.5);
   margin-top: 8px;
 }
 
 .switch-hint a {
-  color: #7c3aed;
+  color: white;
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .switch-hint a:hover {
-  color: #6d28d9;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ===== 移动端抽屉样式 ===== */
+
+/* 立刻进入按钮 - 仅移动端显示 */
+.mobile-enter-btn {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-top: 40px;
+  padding: 14px 32px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 30px;
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mobile-enter-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateX(4px);
+}
+
+/* 抽屉关闭控件 - 位于form-card左上角 */
+.drawer-handle {
+  display: none;
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(124, 58, 237, 0.1);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+  border-radius: 20px;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drawer-handle:active {
+  background: rgba(124, 58, 237, 0.2);
+  transform: scale(0.95);
+}
+
+/* 拖动条 */
+.handle-bar {
+  width: 20px;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  border-radius: 2px;
+  position: relative;
+}
+
+.handle-bar::before,
+.handle-bar::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, #7c3aed, #a855f7);
+  border-radius: 2px;
+}
+
+.handle-bar::before {
+  top: -6px;
+}
+
+.handle-bar::after {
+  top: 6px;
+}
+
+/* 箭头图标 */
+.handle-text {
+  font-size: 14px;
+  color: #7c3aed;
+  font-weight: 600;
+  transition: transform 0.3s ease;
+}
+
+.drawer-handle:active .handle-text {
+  transform: translateX(4px);
 }
 
 /* ===== 响应式设计 ===== */
@@ -1063,18 +1253,296 @@ onMounted(() => {
   }
 }
 
+@media (max-width: 768px) {
+  /* 显示立刻进入按钮 */
+  .mobile-enter-btn {
+    display: flex;
+  }
+
+  /* 隐藏桌面端表单 */
+  .form-section {
+    display: none;
+  }
+
+  /* 表单抽屉样式 - 左右居中 */
+  .form-section {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 101;
+    background: transparent;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    pointer-events: none;
+  }
+
+  /* 抽屉打开状态 - 从右往左滑入 */
+  .form-section.drawer-open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  /* 显示抽屉关闭控件 */
+  .drawer-handle {
+    display: flex;
+  }
+
+  /* 抽屉打开状态 - 从右往左滑入 */
+  .form-section.drawer-open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  /* 显示抽屉关闭控件 */
+  .drawer-handle {
+    display: flex;
+  }
+
+  /* 抽屉内表单容器样式 - 毛玻璃浮层效果 */
+  .form-section .form-card {
+    width: 100%;
+    max-width: 320px;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 56px 24px 32px;
+    margin: auto;
+    max-height: 75vh;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    animation: fadeIn 0.3s ease 0.1s both;
+  }
+
+  .back-home-btn {
+    top: 12px;
+    right: 12px;
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* 调整品牌区域 */
+  .brand-section {
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .brand-content {
+    padding: 20px;
+  }
+
+  /* 移动端 Tab 样式 - 白色文字 */
+  .form-section .tab-container {
+    width: 70%;
+    margin: 0 auto 24px;
+    padding: 0px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .form-section .tab-btn {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .form-section .tab-btn.active {
+    color: white;
+  }
+
+  .form-section .tab-slider {
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  /* 移动端输入框 - 幽灵线框风格 */
+  .form-section .input-wrapper input {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 14px 40px 14px 44px;
+  }
+
+  .form-section .input-wrapper input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .form-section .input-wrapper input:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+
+  .form-section .input-wrapper input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 0 0 20px rgba(124, 58, 237, 0.3);
+  }
+
+  /* 移动端标签文字 */
+  .form-section .field-label {
+    color: rgba(255, 255, 255, 0.6);
+    background: transparent;
+  }
+
+  .form-section .form-field.focused .field-label,
+  .form-section .form-field.filled .field-label {
+    color: white;
+    background: transparent;
+  }
+
+  /* 移动端图标颜色 */
+  .form-section .field-icon {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .form-section .form-field.focused .field-icon,
+  .form-section .form-field.filled .field-icon {
+    color: white;
+  }
+
+  .form-section .eye-icon {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .form-section .eye-icon:hover {
+    color: white;
+  }
+
+  /* 移动端记住我和忘记密码 */
+  .form-section .form-options {
+    color: white;
+  }
+
+  .form-section .forgot-link {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .form-section .forgot-link:hover {
+    color: white;
+    text-decoration: underline;
+  }
+
+  /* 移动端记住我文字 */
+  .form-section .remember-checkbox span:last-child {
+    color: white;
+    font-weight: 500;
+  }
+
+  /* 移动端复选框 */
+  .form-section .remember-checkbox .checkmark {
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .form-section .remember-checkbox input:checked + .checkmark {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  /* 移动端提交按钮 - 半透明+白色边框风格 */
+  .form-section .submit-btn {
+    width: 80%;
+    background: rgba(124, 58, 237, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    box-shadow: 
+      0 4px 15px rgba(124, 58, 237, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .form-section .submit-btn:hover:not(:disabled) {
+    background: rgba(124, 58, 237, 0.5);
+    border-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 
+      0 6px 20px rgba(124, 58, 237, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  /* 移动端切换提示 */
+  .form-section .switch-hint {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .form-section .switch-hint a {
+    color: white;
+    font-weight: 600;
+  }
+
+  /* 移动端错误提示 */
+  .form-section .error-text {
+    color: #ff9f9f;
+  }
+
+  /* 移动端密码强度 */
+  .form-section .strength-text.weak {
+    color: #ff9f9f;
+  }
+
+  .form-section .strength-text.medium {
+    color: #ffd59f;
+  }
+
+  .form-section .strength-text.strong {
+    color: #9fff9f;
+  }
+}
+
 @media (max-width: 480px) {
   .brand-title {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .brand-logo {
-    width: 80px;
-    height: 80px;
+    width: 70px;
+    height: 70px;
   }
 
-  .form-card {
-    padding: 24px;
+  .brand-subtitle {
+    font-size: 14px;
+  }
+
+  /* 移动端 input 上下间距 5px */
+  .auth-form {
+    gap: 5px;
+    min-height: 320px;
+  }
+
+  .form-field {
+    margin-bottom: 5px;
+  }
+
+  /* 移动端占位文本高度调整 */
+  .placeholder-text {
+    min-height: 14px;
+    margin-top: 4px;
+  }
+
+  /* 移动端错误提示高度调整 */
+  .error-text {
+    min-height: 14px;
+    margin-top: 4px;
+  }
+
+  /* 移动端密码强度条高度调整 */
+  .password-strength {
+    margin-top: 4px;
+    min-height: 14px;
   }
 }
 </style>

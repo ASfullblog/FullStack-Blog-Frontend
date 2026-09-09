@@ -5,6 +5,7 @@ import CategoryList from '../../views/admin/CategoryList.vue'
 import Settings from '../../views/admin/Settings.vue'
 import CommentModeration from '../../views/admin/CommentModeration.vue'
 import Announcement from '../../views/admin/Announcement.vue'
+import GameManagement from '../../views/admin/GameManagement.vue'
 
 const adminRoutes = [
   {
@@ -45,6 +46,11 @@ const adminRoutes = [
         path: 'announcement',
         name: 'admin-announcement',
         component: Announcement
+      },
+      {
+        path: 'games',
+        name: 'admin-games',
+        component: GameManagement
       }
     ]
   }

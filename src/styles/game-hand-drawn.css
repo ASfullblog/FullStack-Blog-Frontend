@@ -1,0 +1,380 @@
+/**
+ * 游戏组件手绘涂鸦风格样式
+ * 设计理念：手绘涂鸦感、圆润友好、柔和通透、游戏化反馈
+ */
+
+/* ==================== CSS变量定义 ==================== */
+:root {
+  /* 圆角 */
+  --hand-drawn-radius: 20px;
+  --pill-radius: 50px;
+  --circle-radius: 50%;
+
+  /* 背景色 - 半透明玻璃效果 */
+  --color-bg-glass: rgba(255, 255, 255, 0.95);
+  --color-bg-tint-pink: rgba(255, 240, 245, 0.9);
+  --color-bg-tint-mint: rgba(224, 255, 255, 0.9);
+  --color-bg-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 240, 245, 0.9) 50%, rgba(224, 255, 255, 0.9) 100%);
+
+  /* 状态发光色 */
+  --color-success: #a8e6cf;
+  --color-success-glow: rgba(168, 230, 207, 0.4);
+  --color-warning: #ffaaa5;
+  --color-warning-glow: rgba(255, 170, 165, 0.4);
+  --color-progress: #ffd3b6;
+  --color-progress-glow: rgba(255, 211, 182, 0.4);
+
+  /* 阴影 */
+  --color-shadow-soft: rgba(255, 182, 193, 0.15);
+  --shadow-glass: 0 8px 32px rgba(255, 182, 193, 0.15);
+  --shadow-inset-soft: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-button-hover: 0 6px 20px rgba(0, 0, 0, 0.1);
+
+  /* 文字 */
+  --color-text-primary: #5d5d7a;
+  --color-text-secondary: #7a7a9a;
+  --font-handwritten: 'Comic Sans MS', 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;
+
+  /* 描边 */
+  --border-color-soft: rgba(0, 0, 0, 0.1);
+  --border-color-white: rgba(255, 255, 255, 0.5);
+
+  /* 动画 */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 0.2s;
+  --duration-normal: 0.3s;
+  --duration-slow: 0.5s;
+}
+
+/* ==================== 游戏卡片基础样式 ==================== */
+.game-play-card {
+  background: var(--color-bg-gradient);
+  border-radius: var(--hand-drawn-radius);
+  border: 2px solid var(--border-color-white);
+  box-shadow: var(--shadow-glass);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+/* ==================== 弹窗样式 ==================== */
+.game-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(5px);
+  z-index: 1000;
+}
+
+.game-modal-content {
+  position: relative;
+  background: var(--color-bg-glass);
+  border-radius: var(--hand-drawn-radius);
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: var(--shadow-glass);
+}
+
+/* 手绘描边效果 */
+.game-modal-content::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: calc(var(--hand-drawn-radius) + 2px);
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.6), rgba(168, 230, 207, 0.6));
+  z-index: -1;
+  animation: hand-drawn-border 3s ease-in-out infinite;
+}
+
+@keyframes hand-drawn-border {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* 弹窗状态光晕 */
+.game-modal-success {
+  box-shadow: 0 0 30px var(--color-success-glow);
+  animation: soft-glow-green 2s ease-in-out infinite;
+}
+
+@keyframes soft-glow-green {
+  0%, 100% { box-shadow: 0 0 30px var(--color-success-glow); }
+  50% { box-shadow: 0 0 50px var(--color-success-glow); }
+}
+
+.game-modal-failure {
+  box-shadow: 0 0 30px var(--color-warning-glow);
+  animation: soft-glow-red 2s ease-in-out infinite;
+}
+
+@keyframes soft-glow-red {
+  0%, 100% { box-shadow: 0 0 30px var(--color-warning-glow); }
+  50% { box-shadow: 0 0 50px var(--color-warning-glow); }
+}
+
+/* 弹窗标题 */
+.game-modal-title {
+  font-family: var(--font-handwritten);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 弹窗数据展示 */
+.game-modal-data {
+  font-size: 48px;
+  font-weight: bold;
+  color: var(--color-text-primary);
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 1rem 0;
+}
+
+/* ==================== 按钮样式 ==================== */
+/* 主要操作按钮 - 胶囊形 */
+.game-btn-primary {
+  border-radius: var(--pill-radius);
+  padding: 12px 32px;
+  background: linear-gradient(135deg, rgba(168, 230, 207, 0.9) 0%, rgba(144, 220, 190, 0.9) 100%);
+  color: var(--color-text-primary);
+  border: 2px solid var(--border-color-white);
+  box-shadow: 0 4px 15px var(--color-success-glow);
+  font-family: var(--font-handwritten);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-bounce);
+}
+
+.game-btn-primary:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.game-btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: var(--shadow-inset-soft);
+}
+
+/* 次要操作按钮 - 圆形 */
+.game-btn-secondary {
+  border-radius: var(--circle-radius);
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--border-color-soft);
+  color: var(--color-text-primary);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-bounce);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-btn-secondary:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.game-btn-secondary:active {
+  transform: translateY(2px);
+  box-shadow: var(--shadow-inset-soft);
+}
+
+/* 警告/危险按钮 */
+.game-btn-danger {
+  border-radius: var(--pill-radius);
+  padding: 12px 32px;
+  background: linear-gradient(135deg, rgba(255, 170, 165, 0.9) 0%, rgba(255, 150, 145, 0.9) 100%);
+  color: var(--color-text-primary);
+  border: 2px solid var(--border-color-white);
+  box-shadow: 0 4px 15px var(--color-warning-glow);
+  font-family: var(--font-handwritten);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-bounce);
+}
+
+.game-btn-danger:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.game-btn-danger:active {
+  transform: translateY(2px);
+  box-shadow: var(--shadow-inset-soft);
+}
+
+/* ==================== 底部栏样式 ==================== */
+.game-bottom-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--color-bg-tint-pink) 0%, var(--color-bg-tint-mint) 100%);
+  backdrop-filter: blur(10px);
+  border: 2px solid var(--border-color-white);
+  box-shadow: var(--shadow-glass);
+}
+
+/* 常用按钮 - 放大 */
+.game-btn-main {
+  transform: scale(1.2);
+  padding: 14px 28px;
+  border-radius: var(--pill-radius);
+  background: linear-gradient(135deg, rgba(255, 211, 182, 0.9) 0%, rgba(255, 200, 160, 0.9) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 15px var(--color-progress-glow);
+  font-family: var(--font-handwritten);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-bounce);
+}
+
+.game-btn-main:hover {
+  transform: scale(1.3) translateY(-2px);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.game-btn-main:active {
+  transform: scale(1.2) translateY(2px);
+  box-shadow: var(--shadow-inset-soft);
+}
+
+/* 辅助按钮 - 缩小 */
+.game-btn-aux {
+  transform: scale(0.9);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--circle-radius);
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  color: var(--color-text-primary);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all var(--duration-normal) var(--ease-bounce);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-btn-aux:hover {
+  transform: scale(1) translateY(-2px);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.game-btn-aux:active {
+  transform: scale(0.9) translateY(2px);
+  box-shadow: var(--shadow-inset-soft);
+}
+
+/* ==================== 统计信息框样式 ==================== */
+.game-stat-box {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  padding: 10px 20px;
+  border: 2px solid var(--border-color-white);
+  box-shadow: var(--shadow-inset-soft);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.game-stat-icon {
+  font-size: 20px;
+}
+
+.game-stat-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-family: var(--font-handwritten);
+}
+
+.game-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  font-family: var(--font-handwritten);
+}
+
+/* ==================== 动画效果 ==================== */
+/* 弹窗进入动画 */
+@keyframes slide-up-bounce {
+  0% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.game-modal-enter {
+  animation: slide-up-bounce 0.5s var(--ease-bounce) forwards;
+}
+
+/* 按钮弹跳动画 */
+@keyframes bounce-hover {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1) translateY(-2px); }
+  100% { transform: scale(1.05) translateY(-1px); }
+}
+
+/* 光晕呼吸动画 */
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+.game-status-glow {
+  animation: glow-breathe 2s ease-in-out infinite;
+}
+
+/* ==================== 手绘感工具类 ==================== */
+/* 不规则圆角 */
+.organic-shape {
+  border-radius: 20px 25px 22px 28px;
+}
+
+/* 水彩纹理背景 */
+.watercolor-texture {
+  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+  background-blend-mode: overlay;
+}
+
+/* 手绘描边 */
+.hand-drawn-border {
+  position: relative;
+}
+
+.hand-drawn-border::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, rgba(255, 182, 193, 0.4), rgba(168, 230, 207, 0.4)) border-box;
+  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}

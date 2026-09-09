@@ -32,13 +32,13 @@
       </div>
     </header>
 
-    <!-- 移动端iOS风格悬浮导航栏 -->
-    <nav 
+    <!-- 移动端底部导航栏 -->
+    <nav
       v-if="isMobile"
-      class="fixed bottom-5 left-4 right-4 z-50"
+      class="fixed bottom-0 left-0 right-0 z-50"
     >
-      <!-- 悬浮控制台容器 -->
-      <div class="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 py-3 px-2">
+      <!-- 简约底部导航 -->
+      <div class="bg-[var(--card-bg)] border-t border-[var(--border-color)] py-2 px-2">
         <div class="flex items-center justify-around">
           <!-- 首页 -->
           <router-link to="/" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/', 'text-gray-500': route.path !== '/'}">
@@ -65,9 +65,9 @@
           </button>
           
           <!-- 我的 -->
-          <router-link v-if="userStore.isLoggedIn" to="/profile" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/profile', 'text-gray-500': route.path !== '/profile'}">
+          <router-link v-if="userStore.isLoggedIn" to="/about" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/about', 'text-gray-500': route.path !== '/about'}">
             <img :src="userAvatar" class="w-5 h-5 rounded-full" />
-            <span class="text-[10px] mt-1 font-medium">我的</span>
+            <span class="text-[10px] mt-1 font-medium">关于我</span>
           </router-link>
           <router-link v-else to="/login" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/login', 'text-gray-500': route.path !== '/login'}">
             <el-icon :size="22"><User /></el-icon>
@@ -80,7 +80,7 @@
     <!-- 移动端搜索弹窗 -->
     <div v-if="showMobileSearch && isMobile" class="fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-20" @click="showMobileSearch = false">
       <div class="bg-white rounded-lg p-4 w-11/12 max-w-md" @click.stop>
-        <SearchBox />
+        <SearchBox :full-width="true" :auto-focus="true" @select="closeMobileSearch" />
       </div>
     </div>
 
@@ -167,6 +167,11 @@ const handleScroll = () => {
 const toggleMobileSearch = () => {
   showMobileSearch.value = !showMobileSearch.value
   isMobileSearchBoxShow.value = !isMobileSearchBoxShow.value
+}
+
+const closeMobileSearch = () => {
+  showMobileSearch.value = false
+  isMobileSearchBoxShow.value = false
 }
 
 /**

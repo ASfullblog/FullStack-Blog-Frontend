@@ -106,3 +106,5 @@ coverage/
 
 # Local env files
 *.local
+
+.vercel

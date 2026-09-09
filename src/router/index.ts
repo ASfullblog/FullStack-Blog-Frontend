@@ -11,13 +11,12 @@ import LoginView from '../views/Login.vue'
 import ProfileView from '../views/Profile.vue'
 import AboutView from '../views/About.vue'
 import GamesView from '../views/Games.vue'
-
+import { clearAuthRedirectFlag, clearAuthStorage, isTokenExpired } from '../utils/auth'
 import adminRoutes from './admin'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // 使用主布局的路由（有导航栏）
     {
       path: '/',
       component: MainLayout,
@@ -75,8 +74,6 @@ const router = createRouter({
         }
       ]
     },
-    
-    // 使用空白布局的路由（无导航栏）
     {
       path: '/',
       component: BlankLayout,
@@ -86,52 +83,45 @@ const router = createRouter({
           name: 'login',
           component: LoginView
         }
-        // TODO: 创建以下页面后再启用
-        // {
-        //   path: 'register',
-        //   name: 'register',
-        //   component: () => import('../views/Register.vue')
-        // },
-        // {
-        //   path: 'forgot-password',
-        //   name: 'forgot-password',
-        //   component: () => import('../views/ForgotPassword.vue')
-        // },
-        // {
-        //   path: 'reset-password',
-        //   name: 'reset-password',
-        //   component: () => import('../views/ResetPassword.vue')
-        // }
       ]
     },
-
     ...adminRoutes
   ]
 })
 
-// 路由守卫
-router.beforeEach((to, from, next) => {
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const requiresAdmin = to.matched.some(record => record.meta.requiresAdmin)
-  
-  // 从localStorage获取token和用户信息
+router.beforeEach((to, _from, next) => {
+  clearAuthRedirectFlag()
+
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const requiresAdmin = to.matched.some((record) => record.meta.requiresAdmin)
   const token = localStorage.getItem('token')
   const userStr = localStorage.getItem('user')
   const user = userStr ? JSON.parse(userStr) : null
-  
-  if (requiresAuth) {
-    if (!token) {
-      // 未登录，跳转到登录页
-      next({ path: '/login' })
-    } else if (requiresAdmin && user?.role !== 'admin') {
-      // 非管理员，禁止访问
-      next({ path: '/' })
-    } else {
-      next()
-    }
-  } else {
-    next()
+  const tokenExpired = !!token && isTokenExpired(token)
+
+  if (tokenExpired) {
+    clearAuthStorage()
   }
+
+  if (requiresAuth) {
+    if (!token || tokenExpired) {
+      next({
+        path: '/login',
+        query: {
+          redirect: to.fullPath,
+          reason: tokenExpired ? 'expired' : 'unauthorized'
+        }
+      })
+      return
+    }
+
+    if (requiresAdmin && user?.role !== 'admin') {
+      next({ path: '/' })
+      return
+    }
+  }
+
+  next()
 })
 
 export default router

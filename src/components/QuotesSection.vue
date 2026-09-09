@@ -355,5 +355,16 @@ onMounted(() => {
   .quote-decoration {
     font-size: 80px;
   }
+
+  /* 移动端调整引号位置，避免溢出 */
+  .quote-decoration-left {
+    top: 5px;
+    left: 10px;
+  }
+
+  .quote-decoration-right {
+    bottom: 5px;
+    right: 10px;
+  }
 }
 </style>

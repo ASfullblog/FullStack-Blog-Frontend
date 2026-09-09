@@ -457,7 +457,7 @@ h1::after, h2::after, h3::after {
   }
 
   main {
-    @apply p-4 my-4;
+    @apply p-4 mb-4;
   }
 
   .post-content h1 {

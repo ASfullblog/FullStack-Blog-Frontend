@@ -1,11 +1,14 @@
 <template>
-  <!-- 工具栏组件 - 书签样式固定在页面右侧 -->
-  <div class="toolbar-bookmark" :class="{ 'visible': showScrollTop }" @click="scrollToTop">
-    <!-- 书签标签 -->
-    <div class="bookmark-tab" title="回到顶部">
-      <el-icon :size="18"><ArrowUp /></el-icon>
-    </div>
-  </div>
+  <!-- 工具栏组件 - 圆形悬浮按钮固定在页面右下角 -->
+  <button
+    class="back-to-top"
+    :class="{ 'is-visible': showScrollTop }"
+    @click="scrollToTop"
+    aria-label="回到顶部"
+    title="回到顶部"
+  >
+    <el-icon :size="20"><ArrowUp /></el-icon>
+  </button>
 </template>
 
 <script setup lang="ts">
@@ -44,51 +47,55 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 书签样式容器 */
-.toolbar-bookmark {
+/* 回到顶部按钮 - 简约设计 */
+.back-to-top {
   position: fixed;
-  right: 0;
-  top: 65%;
-  transform: translateY(-50%) translateX(100%);
-  z-index: 998;
-  transition: transform 0.3s ease;
-}
-
-.toolbar-bookmark.visible {
-  transform: translateY(-50%) translateX(0);
-}
-
-/* 书签标签 */
-.bookmark-tab {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
-  padding: 12px 8px;
-  border-radius: 8px 0 0 8px;
+  right: 24px;
+  bottom: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.9);
   transition: all 0.3s ease;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
+  pointer-events: none;
 }
 
-.bookmark-tab:hover {
-  padding-right: 12px;
-  box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.2);
-  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+/* 显示状态 */
+.back-to-top.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+  pointer-events: auto;
 }
 
-/* 响应式 - 移动端 */
+/* 悬停效果 */
+.back-to-top:hover {
+  background: var(--bg-secondary);
+}
+
+/* 点击效果 */
+.back-to-top:active {
+  transform: scale(0.95);
+}
+
+/* 响应式 - 移动端适配底部导航栏 */
 @media (max-width: 768px) {
-  .toolbar-bookmark {
-    top: 65%;
-  }
-
-  .bookmark-tab {
-    padding: 10px 6px;
+  .back-to-top {
+    right: 16px;
+    /* 避开底部导航栏 (约 50px) + 间距 */
+    bottom: 70px;
+    width: 36px;
+    height: 36px;
   }
 }
 </style>
