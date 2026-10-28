@@ -1,6 +1,5 @@
 <template>
   <div class="settings">
-    <h2 class="page-title">系统设置</h2>
     
     <!-- 站点设置 -->
     <el-card class="settings-card" shadow="hover">
@@ -241,14 +240,6 @@ onMounted(() => {
 <style scoped>
 .settings {
   padding: 1rem 0;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  color: var(--text-primary, #1f2937);
-  transition: color 0.3s ease;
 }
 
 .settings-card {

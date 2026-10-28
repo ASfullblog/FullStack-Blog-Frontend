@@ -1,7 +1,5 @@
 <template>
   <div class="dashboard">
-    <h2 class="page-title">仪表盘</h2>
-
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon bg-blue-500">
@@ -158,12 +156,6 @@ onMounted(() => {
 <style scoped>
 .dashboard {
   padding: 1rem 0;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
 }
 
 .stats-grid,

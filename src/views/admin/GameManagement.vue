@@ -1,7 +1,6 @@
 <template>
   <div class="game-management">
     <div class="page-header">
-      <h2 class="page-title">小游戏管理</h2>
       <el-button type="primary" @click="fetchGames" :loading="loading">刷新</el-button>
     </div>
 
@@ -91,13 +90,8 @@ onMounted(() => {
 .page-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 1rem;
 }
 
-.page-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-}
 </style>

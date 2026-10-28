@@ -1,7 +1,6 @@
 <template>
   <!-- 公告管理页面 - 管理员发布公告并通知所有用户 -->
   <div class="announcement-page">
-    <h2 class="page-title">公告管理</h2>
     
     <!-- 发布公告表单 -->
     <el-card class="announcement-form">
@@ -173,13 +172,6 @@ const resetForm = () => {
 <style scoped>
 .announcement-page {
   padding: 20px;
-}
-
-.page-title {
-  margin-bottom: 24px;
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
 }
 
 .announcement-form {

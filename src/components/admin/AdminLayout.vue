@@ -193,6 +193,8 @@ onUnmounted(() => {
   width: 240px;
   background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
   color: #e5e7eb;
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
@@ -308,6 +310,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+  z-index: 2;
 }
 
 .main-header {

@@ -1,7 +1,6 @@
 <template>
   <div class="category-list">
     <div class="list-header">
-      <h2 class="page-title">分类管理</h2>
       <el-button type="primary" @click="handleAddCategory">
         <el-icon><PlusIcon /></el-icon>
         添加分类
@@ -212,17 +211,9 @@ onMounted(() => {
 
 .list-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 1.5rem;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary, #1f2937);
-  margin: 0;
-  transition: color 0.3s ease;
 }
 
 /* 响应式设计 */

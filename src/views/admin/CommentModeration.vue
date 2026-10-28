@@ -1,9 +1,7 @@
 <template>
   <!-- 评论审核管理页面 - 管理员审核用户评论 -->
   <div class="comment-moderation">
-    <!-- 页面标题 -->
     <div class="list-header">
-      <h2 class="page-title">评论审核</h2>
       <div class="header-actions">
         <el-button type="success" @click="approveAllPending" :loading="approvingAll" :disabled="pendingCount === 0">
           <el-icon><Check /></el-icon>
@@ -370,7 +368,7 @@ onMounted(() => {
 
 .list-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 20px;
 }
@@ -380,13 +378,6 @@ onMounted(() => {
   gap: 10px;
 }
 
-.page-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0;
-  color: var(--text-primary, #1f2937);
-  transition: color 0.3s ease;
-}
 
 .search-filter {
   margin-bottom: 20px;

@@ -1,7 +1,6 @@
 <template>
   <div class="post-list">
     <div class="list-header">
-      <h2 class="page-title">文章管理</h2>
       <el-button type="primary" @click="handleCreatePost">
         <el-icon><PlusIcon /></el-icon>
         创建文章
@@ -269,8 +268,21 @@
       </el-form>
     </div>
     
+    <!-- 批量操作栏（勾选文章后出现） -->
+    <div v-if="selectedPosts.length > 0" class="batch-actions">
+      <span class="batch-count">已选 {{ selectedPosts.length }} 篇</span>
+      <el-button type="warning" size="small" :loading="batchLoading" @click="handleBatchUnpublish">
+        <el-icon><HideIcon /></el-icon>
+        批量下架
+      </el-button>
+      <el-button type="danger" size="small" :loading="batchLoading" @click="handleBatchDelete">
+        <el-icon><DeleteIcon /></el-icon>
+        批量删除
+      </el-button>
+    </div>
+
     <!-- 文章列表 -->
-    <el-table :data="posts" style="width: 100%" border>
+    <el-table ref="tableRef" :data="posts" style="width: 100%" border @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" />
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="title" label="标题" min-width="300">
@@ -883,6 +895,74 @@ const handleCurrentChange = (page: number) => {
   fetchPosts()
 }
 
+// ===== 批量操作 =====
+const tableRef = ref()
+const selectedPosts = ref<Post[]>([])
+const batchLoading = ref(false)
+
+const handleSelectionChange = (rows: Post[]) => {
+  selectedPosts.value = rows
+}
+
+// 批量下架：只传 status，后端对缺省字段有 existing 兜底，不会清空正文
+const handleBatchUnpublish = async () => {
+  const targets = selectedPosts.value.filter(p => p.status === 'published')
+  if (targets.length === 0) {
+    ElMessage.warning('所选文章中没有已发布的')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定要下架选中的 ${targets.length} 篇文章吗？`, '批量下架', {
+      confirmButtonText: '确定下架',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  } catch {
+    return
+  }
+  batchLoading.value = true
+  const results = await Promise.allSettled(
+    targets.map(p => request.put(`/posts/${p.id}`, { status: 'draft' }))
+  )
+  batchLoading.value = false
+  const ok = results.filter(r => r.status === 'fulfilled').length
+  const fail = targets.length - ok
+  if (fail === 0) {
+    ElMessage.success(`已下架 ${ok} 篇文章`)
+  } else {
+    ElMessage.warning(`下架完成：成功 ${ok} 篇，失败 ${fail} 篇`)
+  }
+  fetchPosts()
+}
+
+// 批量删除
+const handleBatchDelete = async () => {
+  const targets = [...selectedPosts.value]
+  if (targets.length === 0) return
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除选中的 ${targets.length} 篇文章吗？删除后不可恢复！`,
+      '批量删除',
+      { confirmButtonText: '确定删除', cancelButtonText: '取消', type: 'error' }
+    )
+  } catch {
+    return
+  }
+  batchLoading.value = true
+  const results = await Promise.allSettled(
+    targets.map(p => request.delete(`/posts/${p.id}`))
+  )
+  batchLoading.value = false
+  const ok = results.filter(r => r.status === 'fulfilled').length
+  const fail = targets.length - ok
+  if (fail === 0) {
+    ElMessage.success(`已删除 ${ok} 篇文章`)
+  } else {
+    ElMessage.warning(`删除完成：成功 ${ok} 篇，失败 ${fail} 篇`)
+  }
+  fetchPosts()
+}
+
 // 处理上下架
 const handleToggleStatus = async (row: Post) => {
   try {
@@ -981,17 +1061,28 @@ onMounted(() => {
 
 .list-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 1.5rem;
 }
 
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary, #1f2937);
-  margin: 0;
-  transition: color 0.3s ease;
+/* 批量操作栏 */
+.batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  margin-bottom: 1rem;
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-left: 4px solid #f59e0b;
+  border-radius: 0.5rem;
+}
+
+.batch-count {
+  margin-right: auto;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #6b7280);
 }
 
 /* 搜索和筛选样式 */
