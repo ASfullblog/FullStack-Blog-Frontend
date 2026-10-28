@@ -29,6 +29,11 @@
         </router-link>
       </li>
       <li>
+        <router-link to="/stats" class="nav-link" :class="{ active: isActive('/stats') }">
+          数据统计
+        </router-link>
+      </li>
+      <li>
         <router-link to="/games" class="nav-link" :class="{ active: isActive('/games') }">
           小游戏
         </router-link>

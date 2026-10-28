@@ -34,7 +34,7 @@
           <div class="post-meta">
             <div class="post-meta-content">
               <div class="post-author">
-                <img v-if="post.author.avatar" :src="post.author.avatar" :alt="post.author.username">
+                <img :src="resolveAvatar(post.author)" :alt="post.author.username">
                 <span>{{ post.author.username }}</span>
               </div>
               <div class="post-stats">
@@ -95,6 +95,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { postApi } from '../api/post'
+import { resolveAvatar } from '../utils/avatar'
 import type { Post } from '../types'
 
 // 路由实例

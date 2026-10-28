@@ -20,21 +20,20 @@
           <!-- 头像区域 -->
           <div class="avatar-section">
             <div class="avatar-wrapper">
-              <!-- 博主头像 - 使用默认头像，加载失败时显示备用头像 -->
+              <!-- 博主头像 - 站长固定本地头像（统一走 utils/avatar，admin 映射 assets/avatar.png） -->
               <img
                 :src="userAvatar"
                 alt="博主头像"
                 class="profile-avatar"
-                @error="handleAvatarError"
               >
             </div>
             <!-- <h2 class="username">{{ aboutInfo.username }}</h2> -->
-            <p class="bio">{{ aboutInfo.bio || '这个人很懒，什么都没写~' }}</p>
+            <p class="bio">{{ aboutInfo.bio || '一名前端工程师，自学路线起步，平时把踩坑过程写成博客收在这个站里。' }}</p>
           </div>
 
           <!-- 联系方式 -->
           <div class="contact-section">
-            <a v-if="aboutInfo.githubUrl" :href="aboutInfo.githubUrl" target="_blank" class="contact-item">
+            <a :href="GITHUB_URL" target="_blank" rel="noopener" class="contact-item">
               <div class="contact-icon-wrapper github">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -65,7 +64,7 @@
             </div>
             <div class="tags-cloud">
               <span
-                v-for="(tech, index) in aboutInfo.techStack"
+                v-for="(tech, index) in coreTechTags"
                 :key="index"
                 class="tag-item tech"
                 :style="getTagStyle(index, 'tech')"
@@ -76,7 +75,7 @@
           </div>
 
           <!-- 足迹 -->
-          <!-- <div class="tags-section">
+          <div v-if="aboutInfo.visitedProvinces.length" class="tags-section">
             <div class="section-header-row">
               <h3 class="section-subtitle">足迹</h3>
             </div>
@@ -90,7 +89,7 @@
                 {{ place }}
               </span>
             </div>
-          </div> -->
+          </div>
 
           <!-- 词云图 - 3D球体形式，支持鼠标/手势旋转 -->
           <div class="wordcloud-section">
@@ -131,11 +130,48 @@
       <div class="about-right">
         <!-- 个人简介 -->
         <div class="intro-section">
-          <!-- <h2 class="section-title">👋 你好，我是 {{ aboutInfo.username }}</h2> -->
+          <h2 class="section-title">👋 你好，我是这个博客的站长</h2>
           <div class="intro-content">
-            <p>欢迎来到我的博客！这里是我记录学习、分享技术、表达想法的地方。</p>
-            <p>我喜欢探索新技术，热爱编程，享受解决复杂问题的过程。</p>
-            <p>如果你对我的文章感兴趣，欢迎通过上方的联系方式与我交流。</p>
+            <p>一名前端工程师，专业方向是软件技术，走的是非科班自驱路线——把啃不动的知识点拆成小块，一块块啃下来，再把啃的过程写成博客。这个站就是我的「外部大脑」：学习笔记、踩坑复盘、摘抄的句子都收在这里。</p>
+            <p>日常围着 Vue 全家桶转，最近更多在 Vue3 + TypeScript + Vite。做过后台管理系统里权限、标签、接入配置这类核心模块，也独立交付过电商类 App 的四十多个页面和整套前台 UI 设计稿；小程序 / H5 / App 多端适配、活动页埋点同样不陌生。</p>
+            <p>最近在把 AI 编码工具变成日常：重复劳动尽量自动化，生成的代码严格校验，再沉淀提示词和组件规范去约束输出质量。如果你也在学前端，或者对某篇文章有不同的做法，欢迎点左侧的 GitHub / QQ / 邮箱图标来找我唠。</p>
+          </div>
+        </div>
+
+        <!-- 能力 & 方向 -->
+        <div class="intro-section">
+          <h2 class="section-title">🧭 能力 &amp; 方向</h2>
+          <ul class="focus-list">
+            <li v-for="(point, index) in focusPoints" :key="index">{{ point }}</li>
+          </ul>
+        </div>
+
+        <!-- 技术栈详情 -->
+        <div class="intro-section">
+          <h2 class="section-title">🛠 技术栈</h2>
+          <div v-for="group in skillGroups" :key="group.name" class="skill-group">
+            <h3 class="section-subtitle skill-group-title">{{ group.name }}</h3>
+            <div class="tags-cloud">
+              <span
+                v-for="(tech, index) in group.items"
+                :key="tech"
+                class="tag-item tech"
+                :style="getTagStyle(index, 'tech')"
+              >
+                {{ tech }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 开源 & 探索 -->
+        <div class="intro-section">
+          <h2 class="section-title">🌱 开源 &amp; 探索</h2>
+          <div class="intro-content">
+            <p>一直觉得「重复劳动就该被自动化」，所以喜欢折腾小工具。公开仓库不算多，但每个都解决过我实际遇到的麻烦：</p>
+          </div>
+          <div class="intro-content repo-link-row">
+            <p>全部折腾记录都在 <a :href="GITHUB_URL" target="_blank" rel="noopener" class="github-link">GitHub：asfre</a>，欢迎围观、提 Issue，或者一起改。</p>
           </div>
         </div>
 
@@ -155,14 +191,18 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { Message } from '@element-plus/icons-vue'
 import { getBloggerInfo } from '../api/user'
 import QuotesSection from '../components/QuotesSection.vue'
+import { resolveAvatar, adminAvatar } from '../utils/avatar'
 
-// 博主信息 - 初始为空，从API获取
+// 站长 GitHub 主页（公开账号，页面固定指向这里）
+const GITHUB_URL = 'https://github.com/asfre'
+
+// 博主信息 - 全部来自后台 users 表（公开字段），页面不再硬编码任何个人资料
 const aboutInfo = ref({
   username: '',
-  bio: '',
   email: '',
-  githubUrl: '',
   qqNumber: '',
+  bio: '',
+  githubUrl: '',
   techStack: [] as string[],
   visitedProvinces: [] as string[]
 })
@@ -170,18 +210,45 @@ const aboutInfo = ref({
 // 加载状态
 const loading = ref(true)
 
-// 默认头像 - 使用 DiceBear API 生成默认头像
-const userAvatar = ref('https://api.dicebear.com/9.x/avataaars/svg?seed=1')
+// 博主头像 - 统一走 utils/avatar：admin 固定本地 assets/avatar.png，不再用远程生成头像
+const userAvatar = ref(adminAvatar)
 
-// 备用头像 - 当默认头像加载失败时使用
-const fallbackAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'
+// 去标识化：库内字段理论上已是通用文案，这里再兜底一层，避免任何公司名/真名/手机号漏出
+const sanitize = (text: string): string => {
+  if (!text) return ''
+  return text
+    .replace(/[\u4e00-\u9fa5]{2,4}(?:公司|集团|科技|网络|信息|软件|技术|有限|股份)/g, '某家公司')
+    .replace(/1[3-9]\d{9}/g, '138****0000')
+}
 
-/**
- * 处理头像加载错误
- * 功能：当头像图片加载失败时，切换到备用头像
- */
-const handleAvatarError = () => {
-  userAvatar.value = fallbackAvatar
+// 左侧技术标签：优先读后台 tech_stack，空时给一组兜底（不指向任何单位）
+const coreTechTags = ref<string[]>([])
+
+// 词云关键词 - 通用技术方向（去标识化，不指向任何单位或项目）
+const wordCloudKeywords = [
+  'Vue3', 'TypeScript', 'Vite', 'uni-app', 'Element Plus', 'Pinia',
+  'Composition API', '性能优化', 'AI 提效', '组件化', 'Git', '响应式',
+  'Webpack', '小程序', '多端适配', '懒加载', 'Tree-shaking', 'CI/CD',
+  '首屏优化', '长列表渲染', 'Core Web Vitals', '跨域联调', 'React', '可访问性'
+]
+
+// 能力与方向 - 经历抽象为能力描述，不指向具体单位或项目
+const focusPoints = [
+  '熟悉 Vue2 / Vue3 全家桶与 Composition API，习惯把功能逻辑拆解成可复用组件',
+  '主导过多个后台管理系统核心模块的前端开发（权限 / 标签 / 接入配置类业务方向）',
+  '独立交付过电商类 App 的 40+ 页面与整套前台 UI 设计稿',
+  '做过小程序 / H5 / App 多端一致体验适配，以及活动页埋点',
+  '关注性能与体验：首屏优化、长列表渲染、接口缓存、Core Web Vitals、可访问性',
+  '日常用 AI 编码工具辅助重构提效：校验生成代码，沉淀提示词与组件化规范约束输出质量'
+]
+
+// 技术栈分组明细 - 全部读自后台 tech_stack（不硬编码任何清单）
+const skillGroups = ref<{ name: string; items: string[] }[]>([])
+const buildSkillGroups = () => {
+  const list = aboutInfo.value.techStack?.length
+    ? aboutInfo.value.techStack
+    : ['Vue.js', 'TypeScript', 'Node.js', 'UniApp', 'Element Plus', 'Vite']
+  skillGroups.value = [{ name: '技术栈', items: list }]
 }
 
 // 3D球体词云数据类型
@@ -252,10 +319,8 @@ const getWordCloudColor = (index: number): string => {
 const generateWordCloud = () => {
   const words: WordCloudItem[] = []
 
-  // 合并技术栈和足迹作为词云数据源
-  const techWords = aboutInfo.value.techStack || []
-  const placeWords = aboutInfo.value.visitedProvinces || []
-  const allWords = [...techWords, ...placeWords]
+  // 词云数据源 - 使用页面内置的技术方向关键词（不再读库里的旧配置）
+  const allWords = wordCloudKeywords
 
   // 如果没有数据，显示空状态
   if (allWords.length === 0) {
@@ -533,71 +598,51 @@ const getTagStyle = (index: number, type: 'tech' | 'place') => {
   }
 }
 
-// 获取博主信息
+// 获取博主信息 - 只取联系方式与头像（原有数据源），展示文案不依赖库内旧配置
 const fetchAboutInfo = async () => {
   try {
     loading.value = true
-    // 从API获取博主信息
     const response = await getBloggerInfo()
     if (response.data) {
       const user = response.data
       aboutInfo.value.username = user.username || ''
-      aboutInfo.value.bio = (user as any).bio || ''
       aboutInfo.value.email = user.email || ''
-      aboutInfo.value.githubUrl = (user as any).github_url || ''
       aboutInfo.value.qqNumber = (user as any).qq_number || ''
-      userAvatar.value = user.avatar || userAvatar.value
-
-      // 处理技术栈 - 后端可能返回数组或JSON字符串
-      try {
-        const techStack = (user as any).tech_stack
-        if (techStack) {
-          if (Array.isArray(techStack)) {
-            aboutInfo.value.techStack = techStack
-          } else if (typeof techStack === 'string') {
-            aboutInfo.value.techStack = JSON.parse(techStack)
-          } else {
-            aboutInfo.value.techStack = []
-          }
-        } else {
-          aboutInfo.value.techStack = []
-        }
-      } catch {
-        aboutInfo.value.techStack = []
-      }
-
-      // 处理足迹 - 后端可能返回数组或JSON字符串
-      try {
-        const visitedProvinces = (user as any).visited_provinces
-        if (visitedProvinces) {
-          if (Array.isArray(visitedProvinces)) {
-            aboutInfo.value.visitedProvinces = visitedProvinces
-          } else if (typeof visitedProvinces === 'string') {
-            aboutInfo.value.visitedProvinces = JSON.parse(visitedProvinces)
-          } else {
-            aboutInfo.value.visitedProvinces = []
-          }
-        } else {
-          aboutInfo.value.visitedProvinces = []
-        }
-      } catch {
-        aboutInfo.value.visitedProvinces = []
-      }
-
-      // 生成词云数据
-      generateWordCloud()
+      aboutInfo.value.githubUrl = (user as any).github_url || ''
+      // bio / 技术栈 / 足迹 全部来自后台，并走去标识化兜底
+      aboutInfo.value.bio = sanitize(user.bio || '')
+      const ts = (user as any).tech_stack
+      aboutInfo.value.techStack = Array.isArray(ts) ? ts : (typeof ts === 'string' ? safeParseArray(ts) : [])
+      const vp = (user as any).visited_provinces
+      aboutInfo.value.visitedProvinces = Array.isArray(vp) ? vp : (typeof vp === 'string' ? safeParseArray(vp) : [])
+      // admin 由 resolveAvatar 固定映射到本地头像，其他用户保持原逻辑
+      userAvatar.value = resolveAvatar(user)
+      // 左侧技术标签 + 右侧技术栈分组，都从后台 tech_stack 派生
+      coreTechTags.value = aboutInfo.value.techStack.length
+        ? aboutInfo.value.techStack
+        : ['Vue.js', 'TypeScript', 'Node.js', 'UniApp', 'Element Plus', 'Vite']
+      buildSkillGroups()
     }
   } catch (error) {
     console.error('获取博主信息失败:', error)
-    // 使用默认数据生成词云
-    generateWordCloud()
   } finally {
     loading.value = false
   }
 }
 
-// 页面挂载时获取数据
+// 安全的 JSON 数组解析（兼容后台返回字符串或数组两种形态）
+const safeParseArray = (raw: string): string[] => {
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+// 页面挂载时：先用内置关键词渲染词云，再拉取联系方式
 onMounted(() => {
+  generateWordCloud()
   fetchAboutInfo()
 })
 
@@ -907,6 +952,44 @@ onUnmounted(() => {
 
 .about-section-gap {
   margin-top: 0;
+}
+
+/* 右侧新增区块：列表与分组（沿用现有卡片风格与主题变量） */
+.focus-list {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--text-secondary);
+  line-height: 1.9;
+}
+
+.focus-list li {
+  margin-bottom: 8px;
+}
+
+.focus-list li:last-child {
+  margin-bottom: 0;
+}
+
+.skill-group {
+  margin-bottom: 16px;
+}
+
+.skill-group:last-child {
+  margin-bottom: 0;
+}
+
+.skill-group-title {
+  margin-bottom: 8px;
+}
+
+.repo-link-row {
+  margin-top: 14px;
+}
+
+.github-link {
+  color: var(--accent-color);
+  text-decoration: underline;
+  word-break: break-all;
 }
 
 /* 加载状态 */

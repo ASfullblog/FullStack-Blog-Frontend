@@ -1,20 +1,53 @@
 <template>
   <div class="category-list">
-    <div class="list-header">
-      <el-button type="primary" @click="handleAddCategory">
-        <el-icon><PlusIcon /></el-icon>
-        添加分类
-      </el-button>
+    <!-- 筛选区：上半筛选条件，下半左"添加分类"、右"搜索/重置" -->
+    <div class="filter-card">
+      <div class="filter-conditions">
+        <el-input
+          v-model="searchForm.keyword"
+          placeholder="搜索分类名称 / Slug"
+          clearable
+          style="width: 260px"
+          @keyup.enter="handleSearch"
+          @clear="handleSearch"
+        />
+      </div>
+      <div class="filter-actions">
+        <div class="filter-actions-left">
+          <el-button type="primary" @click="handleAddCategory">
+            <el-icon><PlusIcon /></el-icon>
+            添加分类
+          </el-button>
+        </div>
+        <div class="filter-actions-right">
+          <el-button type="primary" @click="handleSearch">
+            <el-icon><SearchIcon /></el-icon>
+            搜索
+          </el-button>
+          <el-button @click="handleResetSearch">重置</el-button>
+        </div>
+      </div>
     </div>
     
     <!-- 分类列表 -->
-    <el-table :data="categories" style="width: 100%" border>
-      <el-table-column prop="id" label="ID" width="80" />
+    <el-table
+      :data="categories"
+      v-loading="loading"
+      element-loading-text="加载中..."
+      style="width: 100%"
+      border
+    >
+      <el-table-column type="index" label="#" width="70" align="center" />
       <el-table-column prop="name" label="分类名称" min-width="200" />
       <el-table-column prop="slug" label="Slug" width="200" />
       <el-table-column prop="parent.name" label="父分类" width="150">
         <template #default="{ row }">
           {{ row.parent?.name || '无' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="文章数量" width="110" align="center">
+        <template #default="{ row }">
+          {{ row.postCount ?? 0 }}
         </template>
       </el-table-column>
       <el-table-column label="操作" width="150">
@@ -68,12 +101,18 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus as PlusIcon, Edit as EditIcon, Delete as DeleteIcon } from '@element-plus/icons-vue'
+import { Plus as PlusIcon, Edit as EditIcon, Delete as DeleteIcon, Search as SearchIcon } from '@element-plus/icons-vue'
 import request from '../../utils/request'
 import type { Category } from '../../types'
 
 // 响应式数据
 const categories = ref<Category[]>([])
+const loading = ref(false)
+
+// 筛选条件
+const searchForm = reactive({
+  keyword: ''
+})
 
 const dialogVisible = ref(false)
 const isEditCategory = ref(false)
@@ -187,15 +226,32 @@ const handleDeleteCategory = (id: number) => {
   })
 }
 
-// 获取分类列表
+// 获取分类列表（带关键字筛选 + loading 状态）
 const fetchCategories = async () => {
+  loading.value = true
   try {
-    const response = await request.get('/categories')
+    const keyword = searchForm.keyword.trim()
+    const response = await request.get('/categories', {
+      params: keyword ? { keyword } : {}
+    })
     categories.value = response.data
   } catch (error) {
     console.error('获取分类列表失败:', error)
     ElMessage.error('获取分类列表失败')
+  } finally {
+    loading.value = false
   }
+}
+
+// 搜索
+const handleSearch = () => {
+  fetchCategories()
+}
+
+// 重置筛选条件并重新加载
+const handleResetSearch = () => {
+  searchForm.keyword = ''
+  fetchCategories()
 }
 
 // 页面挂载时获取数据
@@ -209,19 +265,47 @@ onMounted(() => {
   padding: 1rem 0;
 }
 
-.list-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+/* 筛选卡片：上半筛选条件，下半左新增 / 右搜索重置 */
+.filter-card {
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow-color, 0 1px 3px rgba(0, 0, 0, 0.1));
+  padding: 1.5rem;
   margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.filter-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.filter-actions-right {
+  display: flex;
+  gap: 0.5rem;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .list-header {
+  .filter-actions {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+
+  .filter-actions-right {
+    align-self: flex-end;
   }
 }
 </style>

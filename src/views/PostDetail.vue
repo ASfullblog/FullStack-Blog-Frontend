@@ -16,7 +16,7 @@
         <!-- 文章信息 -->
         <div class="flex flex-wrap items-center mb-6 text-sm text-gray-500">
           <div class="flex items-center mr-6 mb-2">
-            <img v-if="post.author.avatar" :src="post.author.avatar" :alt="post.author.username" class="w-6 h-6 rounded-full mr-2">
+            <img :src="resolveAvatar(post.author)" :alt="post.author.username" class="w-6 h-6 rounded-full mr-2">
             <span>{{ post.author.username }}</span>
           </div>
           <div class="mr-6 mb-2">
@@ -72,7 +72,7 @@
             <!-- 已登录时显示评论输入框 -->
             <div v-else class="bg-white rounded-lg shadow-md p-4">
               <div class="flex items-center mb-3">
-                <img v-if="userStore.currentUser?.avatar" :src="userStore.currentUser.avatar" :alt="userStore.currentUser.username" class="w-8 h-8 rounded-full mr-2">
+                <img :src="resolveAvatar(userStore.currentUser)" :alt="userStore.currentUser?.username" class="w-8 h-8 rounded-full mr-2">
                 <span class="font-medium">{{ userStore.currentUser?.username }}</span>
               </div>
               <div class="relative">
@@ -153,7 +153,7 @@
         <div class="bg-white rounded-lg shadow-md p-4 mb-6">
           <h3 class="text-lg font-bold mb-3">作者信息</h3>
           <div class="flex items-center mb-3">
-            <img v-if="post.author.avatar" :src="post.author.avatar" :alt="post.author.username" class="w-12 h-12 rounded-full mr-3">
+            <img :src="resolveAvatar(post.author)" :alt="post.author.username" class="w-12 h-12 rounded-full mr-3">
             <div>
               <div class="font-medium">{{ post.author.username }}</div>
               <div class="text-sm text-gray-500">作者</div>
@@ -208,6 +208,7 @@ import { MagicStick, ChatDotRound, Edit, Delete, Timer, InfoFilled } from '@elem
 import MarkdownIt from 'markdown-it'
 import { postApi } from '../api/post'
 import { useUserStore } from '../stores/userStore'
+import { resolveAvatar } from '../utils/avatar'
 import CommentItem from '../components/CommentItem.vue'
 import { validateComment, detectXSS } from '../utils/security'
 import { showSuccess, showInfo, showError } from '../utils/toast'
@@ -224,29 +225,7 @@ const slug = computed(() => route.params.slug as string)
 // 默认封面图片
 const DEFAULT_COVER_IMAGE = 'https://picsum.photos/1200/600?random=1'
 
-// 默认头像列表（与UserActions.vue保持一致）
-const defaultAvatars = [
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user1&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user2&backgroundColor=c0aede',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user3&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user4&backgroundColor=ffd5dc',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user5&backgroundColor=ffdfbf',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user6&backgroundColor=c0aede',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user7&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user8&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user9&backgroundColor=ffd5dc'
-]
-
-/**
- * 获取用户默认头像
- * 基于用户ID计算固定头像，确保同一用户始终使用同一头像
- * @param userId 用户ID
- * @returns 默认头像URL
- */
-const getDefaultAvatar = (userId: number): string => {
-  const avatarIndex = (userId - 1) % defaultAvatars.length
-  return defaultAvatars[avatarIndex]
-}
+// 默认头像逻辑统一收敛到 utils/avatar（resolveAvatar）
 
 // 响应式数据
 const post = ref<Post | null>(null)

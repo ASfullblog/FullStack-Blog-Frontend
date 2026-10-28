@@ -1,19 +1,6 @@
 <template>
   <!-- 评论审核管理页面 - 管理员审核用户评论 -->
   <div class="comment-moderation">
-    <div class="list-header">
-      <div class="header-actions">
-        <el-button type="success" @click="approveAllPending" :loading="approvingAll" :disabled="pendingCount === 0">
-          <el-icon><Check /></el-icon>
-          一键通过全部 ({{ pendingCount }})
-        </el-button>
-        <el-button type="primary" @click="fetchComments" :loading="loading">
-          <el-icon><Refresh /></el-icon>
-          刷新
-        </el-button>
-      </div>
-    </div>
-
     <!-- 搜索和筛选 -->
     <div class="search-filter">
       <el-form :inline="true" :model="searchForm" class="search-form">
@@ -27,24 +14,36 @@
         <el-form-item label="关键词">
           <el-input v-model="searchForm.keyword" placeholder="搜索评论内容" clearable style="width: 200px" @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item>
+      </el-form>
+      <div class="filter-actions">
+        <div class="filter-actions-left">
+          <el-button type="success" @click="approveAllPending" :loading="approvingAll" :disabled="pendingCount === 0">
+            <el-icon><Check /></el-icon>
+            一键通过全部 ({{ pendingCount }})
+          </el-button>
+          <el-button type="primary" @click="fetchComments" :loading="loading">
+            <el-icon><Refresh /></el-icon>
+            刷新
+          </el-button>
+        </div>
+        <div class="filter-actions-right">
           <el-button type="primary" @click="handleSearch">
             <el-icon><Search /></el-icon>
             搜索
           </el-button>
           <el-button @click="resetSearch">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </div>
 
     <!-- 评论列表 -->
-    <el-table :data="paginatedComments" style="width: 100%" border v-loading="loading">
+    <el-table :data="paginatedComments" style="width: 100%" border v-loading="loading" element-loading-text="加载中...">
       <el-table-column type="selection" width="55" />
-      <el-table-column prop="id" label="ID" width="80" />
+      <el-table-column type="index" label="#" width="60" align="center" :index="indexMethod" />
       <el-table-column label="用户信息" width="150">
         <template #default="{ row }">
           <div class="user-cell">
-            <el-avatar :src="row.user?.avatar" :size="32">
+            <el-avatar :src="resolveAvatar(row.user)" :size="32">
               {{ getAvatarText(row.user?.username) }}
             </el-avatar>
             <span class="username">{{ row.user?.username || '匿名' }}</span>
@@ -130,6 +129,7 @@ import {
   Close
 } from '@element-plus/icons-vue'
 import request from '../../utils/request'
+import { resolveAvatar } from '../../utils/avatar'
 
 // 加载状态
 const loading = ref(false)
@@ -179,6 +179,11 @@ const paginatedComments = computed(() => {
   const end = start + pagination.value.pageSize
   return filteredComments.value.slice(start, end)
 })
+
+// 序号列：从 1 开始，跨分页连续编号（数据库真实 id 仍在 row.id 里，只是不展示）
+const indexMethod = (index: number): number => {
+  return (pagination.value.currentPage - 1) * pagination.value.pageSize + index + 1
+}
 
 // 待审核评论数量
 const pendingCount = computed(() => {
@@ -366,19 +371,6 @@ onMounted(() => {
   padding: 20px;
 }
 
-.list-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-
 .search-filter {
   margin-bottom: 20px;
   padding: 20px;
@@ -391,6 +383,21 @@ onMounted(() => {
 .search-form {
   display: flex;
   flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* 筛选区底部操作栏：左动作 / 右搜索重置 */
+.filter-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.filter-actions-left,
+.filter-actions-right {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 

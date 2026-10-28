@@ -39,6 +39,12 @@
             </router-link>
           </li>
           <li>
+            <router-link to="/admin/users" class="nav-item" active-class="active">
+              <el-icon class="nav-icon"><UserFilled /></el-icon>
+              <span>用户管理</span>
+            </router-link>
+          </li>
+          <li>
             <router-link to="/admin/settings" class="nav-item" active-class="active">
               <el-icon class="nav-icon"><Setting /></el-icon>
               <span>系统设置</span>
@@ -55,7 +61,7 @@
 
       <div class="sidebar-footer">
         <div class="user-info" @click="showUserMenu = !showUserMenu">
-          <img v-if="user?.avatar" :src="user.avatar" :alt="user.username" class="user-avatar">
+          <img v-if="user?.username" :src="resolveAvatar(user)" :alt="user.username" class="user-avatar">
           <div v-else class="user-avatar-placeholder">
             {{ user?.username?.charAt(0) || 'U' }}
           </div>
@@ -107,9 +113,11 @@ import {
   Notification,
   Setting,
   SwitchButton,
-  TopLeft
+  TopLeft,
+  UserFilled
 } from '@element-plus/icons-vue'
 import request from '../../utils/request'
+import { resolveAvatar } from '../../utils/avatar'
 import { useThemeStore } from '../../stores/themeStore'
 import { useUserStore } from '../../stores/userStore'
 

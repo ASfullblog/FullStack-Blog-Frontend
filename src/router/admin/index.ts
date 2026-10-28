@@ -6,6 +6,7 @@ import Settings from '../../views/admin/Settings.vue'
 import CommentModeration from '../../views/admin/CommentModeration.vue'
 import Announcement from '../../views/admin/Announcement.vue'
 import GameManagement from '../../views/admin/GameManagement.vue'
+import UserManagement from '../../views/admin/UserManagement.vue'
 
 const adminRoutes = [
   {
@@ -36,6 +37,11 @@ const adminRoutes = [
         path: 'comments',
         name: 'admin-comments',
         component: CommentModeration
+      },
+      {
+        path: 'users',
+        name: 'admin-users',
+        component: UserManagement
       },
       {
         path: 'settings',

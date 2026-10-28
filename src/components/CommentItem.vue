@@ -5,7 +5,7 @@
     <div v-if="level === 0" class="comment-main">
       <div class="comment-left">
         <img
-          :src="comment.user.avatar || getDefaultAvatar(comment.user.id)"
+          :src="resolveAvatar(comment.user)"
           :alt="comment.user.username"
           class="avatar"
         >
@@ -135,19 +135,12 @@
 import { ref, computed } from 'vue'
 import { ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/userStore'
+import { resolveAvatar } from '../utils/avatar'
 import type { Comment } from '../types'
 import NestedReplies from './NestedReplies.vue'
 
 const userStore = useUserStore()
 const isLoggedIn = computed(() => userStore.isLoggedIn)
-
-const defaultAvatars = [
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user1&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user2&backgroundColor=c0aede',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user3&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user4&backgroundColor=ffd5dc',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user5&backgroundColor=ffdfbf',
-]
 
 const props = defineProps<{
   comment: Comment & { children?: Comment[] }
@@ -227,10 +220,6 @@ const getReplyTargetName = (childComment: Comment): string => {
     return childComment.parent.user.username
   }
   return props.comment.user.username
-}
-
-const getDefaultAvatar = (userId: number): string => {
-  return defaultAvatars[(userId - 1) % defaultAvatars.length]
 }
 
 const formatDate = (dateString: string): string => {

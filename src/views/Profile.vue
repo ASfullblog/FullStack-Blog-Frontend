@@ -276,6 +276,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Camera, Plus, Close, Edit, Message, Fold, Expand } from '@element-plus/icons-vue'
 import request from '../utils/request'
+import { resolveAvatar } from '../utils/avatar'
 import { getUserById } from '../api/user'
 import QuotesSection from '../components/QuotesSection.vue'
 
@@ -338,19 +339,6 @@ const postFilter = ref({
   sort: 'latest'
 })
 
-// 默认头像数组
-const defaultAvatars = [
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=1',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=2',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=3',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=4',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=5',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=6',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=7',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=8',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=9'
-]
-
 // 默认封面图片
 const DEFAULT_COVER_IMAGE = 'https://picsum.photos/1200/600?random=1'
 
@@ -383,15 +371,8 @@ const getCoverImage = (coverImage?: string): string => {
   return coverImage || DEFAULT_COVER_IMAGE
 }
 
-// 计算用户头像
-const userAvatar = computed(() => {
-  if (userStore.user?.avatar) {
-    return userStore.user.avatar
-  }
-  const seed = userStore.user?.id || userStore.user?.username?.length || 0
-  const avatarIndex = seed % defaultAvatars.length
-  return defaultAvatars[avatarIndex]
-})
+// 计算用户头像：admin 固定本地头像，其他用户保持原逻辑（统一走 utils/avatar）
+const userAvatar = computed(() => resolveAvatar(userStore.user))
 
 // 筛选后的用户帖子
 const filteredUserPosts = computed(() => {

@@ -71,6 +71,12 @@ const router = createRouter({
           path: 'games',
           name: 'games',
           component: GamesView
+        },
+        {
+          path: 'stats',
+          name: 'stats',
+          component: () => import('../views/Statistics.vue'),
+          meta: { title: '数据统计' }
         }
       ]
     },

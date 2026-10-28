@@ -1,12 +1,5 @@
 <template>
   <div class="post-list">
-    <div class="list-header">
-      <el-button type="primary" @click="handleCreatePost">
-        <el-icon><PlusIcon /></el-icon>
-        创建文章
-      </el-button>
-    </div>
-    
     <!-- 文章编辑弹窗 -->
     <el-dialog
       v-model="dialogVisible"
@@ -165,7 +158,7 @@
           <!-- 文章信息 -->
           <div class="flex flex-wrap items-center mb-6 text-sm text-gray-500">
             <div class="flex items-center mr-6 mb-2">
-              <img v-if="previewPost.author?.avatar" :src="previewPost.author.avatar" :alt="previewPost.author.username" class="w-6 h-6 rounded-full mr-2">
+              <img v-if="previewPost.author" :src="resolveAvatar(previewPost.author)" :alt="previewPost.author.username" class="w-6 h-6 rounded-full mr-2">
               <span>{{ previewPost.author?.username || '未知作者' }}</span>
             </div>
             <div class="mr-6 mb-2">
@@ -199,7 +192,7 @@
           <div class="author-card" :style="{ background: authorCardColor }">
             <h3 class="author-title">作者信息</h3>
             <div class="flex items-center mb-3">
-              <img v-if="previewPost.author?.avatar" :src="previewPost.author.avatar" :alt="previewPost.author.username" class="w-12 h-12 rounded-full mr-3">
+              <img v-if="previewPost.author" :src="resolveAvatar(previewPost.author)" :alt="previewPost.author.username" class="w-12 h-12 rounded-full mr-3">
               <div v-else class="w-12 h-12 rounded-full mr-3 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
                 {{ (previewPost.author?.username || '未')[0].toUpperCase() }}
               </div>
@@ -258,14 +251,22 @@
             <el-option label="已发布" value="published" />
           </el-select>
         </el-form-item>
-        <el-form-item>
+      </el-form>
+      <div class="filter-actions">
+        <div class="filter-actions-left">
+          <el-button type="primary" @click="handleCreatePost">
+            <el-icon><PlusIcon /></el-icon>
+            创建文章
+          </el-button>
+        </div>
+        <div class="filter-actions-right">
           <el-button type="primary" @click="handleSearch">
             <el-icon><SearchIcon /></el-icon>
             搜索
           </el-button>
           <el-button @click="resetSearch">重置</el-button>
-        </el-form-item>
-      </el-form>
+        </div>
+      </div>
     </div>
     
     <!-- 批量操作栏（勾选文章后出现） -->
@@ -282,9 +283,17 @@
     </div>
 
     <!-- 文章列表 -->
-    <el-table ref="tableRef" :data="posts" style="width: 100%" border @selection-change="handleSelectionChange">
+    <el-table
+      ref="tableRef"
+      :data="posts"
+      style="width: 100%"
+      border
+      v-loading="tableLoading"
+      element-loading-text="加载中..."
+      @selection-change="handleSelectionChange"
+    >
       <el-table-column type="selection" width="55" />
-      <el-table-column prop="id" label="ID" width="80" />
+      <el-table-column type="index" label="#" width="60" align="center" :index="indexMethod" />
       <el-table-column prop="title" label="标题" min-width="300">
         <template #default="{ row }">
           <div class="post-title">
@@ -367,6 +376,7 @@ import { Plus as PlusIcon, Search as SearchIcon, Edit as EditIcon, Delete as Del
 import { postApi } from '../../api/post'
 import request from '../../utils/request'
 import { useUserStore } from '../../stores/userStore'
+import { resolveAvatar } from '../../utils/avatar'
 import type { Post, Category, Tag, CreatePostParams, UpdatePostParams } from '../../types'
 
 // 目录项
@@ -395,6 +405,11 @@ const pagination = reactive({
   total: 0
 })
 
+// 序号列：从 1 开始，跨分页连续编号（数据库真实 id 仍在 row.id 里，只是不展示）
+const indexMethod = (index: number): number => {
+  return (pagination.currentPage - 1) * pagination.pageSize + index + 1
+}
+
 // 分类数据
 const categories = ref<Category[]>([])
 
@@ -403,6 +418,8 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const formRef = ref()
 const loading = ref(false)
+// 列表加载状态（Neon 冷启动慢，表格需要 loading 遮罩）
+const tableLoading = ref(false)
 const coverFileList = ref<any[]>([])
 const currentPostId = ref<number | null>(null)
 const generatingExcerpt = ref(false)
@@ -1029,6 +1046,7 @@ const fetchTags = async () => {
 
 // 获取文章列表
 const fetchPosts = async () => {
+  tableLoading.value = true
   try {
     // 调用API获取文章列表
     const response = await postApi.getPosts({
@@ -1043,6 +1061,8 @@ const fetchPosts = async () => {
   } catch (error) {
     console.error('获取文章列表失败:', error)
     ElMessage.error('获取文章列表失败')
+  } finally {
+    tableLoading.value = false
   }
 }
 
@@ -1059,11 +1079,19 @@ onMounted(() => {
   padding: 1rem 0;
 }
 
-.list-header {
+/* 筛选区底部操作栏：左动作 / 右搜索重置 */
+.filter-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  gap: 0.75rem;
+}
+
+.filter-actions-left,
+.filter-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 /* 批量操作栏 */
@@ -1416,10 +1444,10 @@ onMounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .list-header {
+  .filter-actions {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.75rem;
   }
   
   .search-form {

@@ -55,10 +55,16 @@
 
     <div class="recent-posts">
       <h3 class="section-title">最近文章</h3>
-      <el-table :data="recentPosts" style="width: 100%">
+      <el-table
+        v-loading="tableLoading"
+        element-loading-text="加载中..."
+        :data="recentPosts"
+        style="width: 100%"
+      >
+        <el-table-column type="index" label="#" width="60" align="center" />
         <el-table-column prop="title" label="标题" min-width="320">
           <template #default="{ row }">
-            <router-link :to="`/post/${row.slug}`" target="_blank" class="post-title">{{ row.title }}</router-link>
+            <a class="post-title" @click="handlePreviewPost(row)">{{ row.title }}</a>
           </template>
         </el-table-column>
         <el-table-column prop="category.name" label="分类" width="120" />
@@ -84,6 +90,9 @@
         </el-table-column>
       </el-table>
     </div>
+
+    <!-- 文章预览弹窗（与文章管理页同款交互） -->
+    <PostPreviewDialog v-model="previewVisible" :post="previewPost" />
   </div>
 </template>
 
@@ -99,6 +108,7 @@ import {
 } from '@element-plus/icons-vue'
 import request from '../../utils/request'
 import { postApi } from '../../api/post'
+import PostPreviewDialog from '../../components/admin/PostPreviewDialog.vue'
 import type { Post } from '../../types'
 
 interface DashboardStats {
@@ -110,8 +120,14 @@ interface DashboardStats {
   totalViews: number
 }
 
+// 最近文章只取最新发布的 5 条
+const RECENT_POST_LIMIT = 5
+
 const router = useRouter()
 const recentPosts = ref<Post[]>([])
+const tableLoading = ref(false)
+const previewVisible = ref(false)
+const previewPost = ref<Post | null>(null)
 const stats = ref<DashboardStats>({
   posts: 0,
   categories: 0,
@@ -134,17 +150,27 @@ const editPost = (id: number) => {
   router.push(`/admin/posts/edit/${id}`)
 }
 
+// 点击标题：弹窗预览（不再跳新标签页）
+const handlePreviewPost = (row: Post) => {
+  previewPost.value = row
+  previewVisible.value = true
+}
+
 const fetchData = async () => {
+  tableLoading.value = true
   try {
     const [postsResponse, statsResponse] = await Promise.all([
-      postApi.getPosts({ limit: 5 }),
+      // 最新发布（created_at DESC，接口默认）的 5 条已发布文章
+      postApi.getPosts({ page: 1, limit: RECENT_POST_LIMIT, status: 'published' }),
       request.get('/admin/dashboard/stats')
     ])
 
-    recentPosts.value = postsResponse.data.posts
+    recentPosts.value = (postsResponse.data.posts || []).slice(0, RECENT_POST_LIMIT)
     stats.value = statsResponse.data
   } catch (error) {
     console.error('fetch dashboard data failed:', error)
+  } finally {
+    tableLoading.value = false
   }
 }
 
@@ -229,9 +255,12 @@ onMounted(() => {
 .post-title {
   color: #3b82f6;
   text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
 }
 
 .post-title:hover {
+  color: #2563eb;
   text-decoration: underline;
 }
 </style>

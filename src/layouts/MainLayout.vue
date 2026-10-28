@@ -116,6 +116,7 @@ import SearchBox from '../components/SearchBox.vue'
 import NavMenu from '../components/NavMenu.vue'
 import UserActions from '../components/UserActions.vue'
 import { useUserStore } from '../stores/userStore'
+import { resolveAvatar } from '../utils/avatar'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -129,30 +130,12 @@ const showMobileSearch = ref(false)
 // 移动端搜索弹窗中的搜索框是否显示
 const isMobileSearchBoxShow = ref(false)
 
-// 生成默认头像列表
-const defaultAvatars = [
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=1',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=2',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=3',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=4',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=5',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=6',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=7',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=8',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=9'
-]
-
 /**
- * 计算用户头像
+ * 用户头像
+ * admin（站长）固定使用本地头像，其他用户保持原逻辑（自定义头像 -> 按 ID 取默认头像）
+ * 统一走 utils/avatar，避免每个组件各维护一份头像池
  */
-const userAvatar = computed(() => {
-  if (userStore.user?.avatar) {
-    return userStore.user.avatar
-  }
-  const seed = userStore.user?.id || userStore.user?.username?.length || 0
-  const avatarIndex = seed % defaultAvatars.length
-  return defaultAvatars[avatarIndex]
-})
+const userAvatar = computed(() => resolveAvatar(userStore.user))
 
 /**
  * 处理滚动事件

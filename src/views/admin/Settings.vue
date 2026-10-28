@@ -1,5 +1,5 @@
 <template>
-  <div class="settings">
+  <div class="settings" v-loading="pageLoading" element-loading-text="加载中...">
     
     <!-- 站点设置 -->
     <el-card class="settings-card" shadow="hover">
@@ -52,7 +52,7 @@
           </div>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="saveSiteSettings">保存设置</el-button>
+          <el-button type="primary" @click="saveSiteSettings" :loading="loading" :disabled="pageLoading">保存设置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -75,7 +75,7 @@
           <el-switch v-model="otherSettings.allowRegistration" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="saveOtherSettings">保存设置</el-button>
+          <el-button type="primary" @click="saveOtherSettings" :loading="loading" :disabled="pageLoading">保存设置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -95,6 +95,8 @@ const otherSettingsRef = ref()
 const logoFileList = ref<any[]>([])
 const configStore = useConfigStore()
 const loading = ref(false)
+// 首屏拉取设置的 loading（Neon 冷启动慢，避免空表单误导操作）
+const pageLoading = ref(false)
 
 // 站点设置
 const siteSettings = reactive({
@@ -212,6 +214,7 @@ const saveOtherSettings = async () => {
 
 // 获取设置
 const fetchSettings = async () => {
+  pageLoading.value = true
   try {
     const settings = await request.get('/settings')
 
@@ -228,6 +231,8 @@ const fetchSettings = async () => {
   } catch (error) {
     console.error('获取设置失败:', error)
     ElMessage.error('获取设置失败')
+  } finally {
+    pageLoading.value = false
   }
 }
 

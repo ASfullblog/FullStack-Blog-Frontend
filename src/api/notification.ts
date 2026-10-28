@@ -46,5 +46,13 @@ export const notificationApi = {
    */
   deleteNotification: async (id: number): Promise<ApiResponse<null>> => {
     return request.delete(`/notifications/${id}`)
+  },
+
+  /**
+   * 清空当前用户的全部通知
+   * @returns 删除的条数
+   */
+  clearAllNotifications: async (): Promise<ApiResponse<{ deleted: number }>> => {
+    return request.delete('/notifications/all')
   }
 }

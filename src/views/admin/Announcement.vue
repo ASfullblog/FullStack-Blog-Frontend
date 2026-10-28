@@ -32,11 +32,17 @@
         </el-form-item>
         
         <el-form-item>
-          <el-button type="primary" @click="submitAnnouncement" :loading="submitting">
-            <el-icon><Promotion /></el-icon>
-            发布公告
-          </el-button>
-          <el-button @click="resetForm">重置</el-button>
+          <div class="form-actions-bar">
+            <div class="form-actions-left">
+              <el-button type="primary" @click="submitAnnouncement" :loading="submitting">
+                <el-icon><Promotion /></el-icon>
+                发布公告
+              </el-button>
+            </div>
+            <div class="form-actions-right">
+              <el-button @click="resetForm">重置</el-button>
+            </div>
+          </div>
         </el-form-item>
       </el-form>
       
@@ -185,6 +191,22 @@ const resetForm = () => {
 
 .success-alert {
   margin-top: 16px;
+}
+
+/* 表单底部操作栏：左动作 / 右重置（对齐后台筛选区规范） */
+.form-actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.form-actions-left,
+.form-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .tips-list {

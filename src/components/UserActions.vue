@@ -60,6 +60,7 @@ import { ElMessage } from 'element-plus'
 import { Setting, User } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/userStore'
 import { useThemeStore } from '../stores/themeStore'
+import { resolveAvatar } from '../utils/avatar'
 import NotificationBell from './NotificationBell.vue'
 
 // 接收props
@@ -110,33 +111,12 @@ onUnmounted(() => {
   window.removeEventListener('click', handleClickOutside)
 })
 
-// 生成默认头像列表（使用固定的seed，确保每个用户头像固定不变）
-const defaultAvatars = [
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user1&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user2&backgroundColor=c0aede',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user3&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user4&backgroundColor=ffd5dc',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user5&backgroundColor=ffdfbf',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user6&backgroundColor=c0aede',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user7&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user8&backgroundColor=d1d4f9',
-  'https://api.dicebear.com/9.x/avataaars/svg?seed=user9&backgroundColor=ffd5dc'
-]
-
 /**
- * 计算用户头像
- * 如果有自定义头像则使用，否则根据用户ID生成固定默认头像
- * 每个用户的头像固定不变，基于用户ID对头像数量取模
+ * 用户头像
+ * admin（站长）固定使用本地头像，其他用户保持原逻辑：有自定义头像用自定义，否则按 ID 取固定默认头像
+ * 统一走 utils/avatar，避免每个组件各写一份头像池
  */
-const userAvatar = computed(() => {
-  if (userStore.user?.avatar) {
-    return userStore.user.avatar
-  }
-  // 使用用户ID计算固定头像索引，确保同一个用户始终使用同一个头像
-  const userId = userStore.user?.id || 1
-  const avatarIndex = (userId - 1) % defaultAvatars.length
-  return defaultAvatars[avatarIndex]
-})
+const userAvatar = computed(() => resolveAvatar(userStore.user))
 
 /**
  * 处理退出登录

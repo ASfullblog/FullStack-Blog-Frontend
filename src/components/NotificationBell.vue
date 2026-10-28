@@ -18,6 +18,18 @@
         <span class="title">通知消息</span>
         <div class="header-actions">
           <el-button
+            v-if="notifications.length > 0"
+            link
+            type="danger"
+            size="small"
+            class="clear-all-btn"
+            :loading="clearingAll"
+            :disabled="clearingAll"
+            @click="clearAllMessages"
+          >
+            清空消息
+          </el-button>
+          <el-button
             v-if="unreadCount > 0"
             link
             type="primary"
@@ -99,12 +111,13 @@
  * 2. 点击展开通知下拉列表
  * 3. 支持标记单条通知为已读
  * 4. 支持标记所有通知为已读
- * 5. 点击通知显示详情弹窗
+ * 5. 支持二次确认后清空当前用户全部通知
+ * 6. 点击通知显示详情弹窗
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Bell, CircleCheck, CircleClose, ChatDotRound, InfoFilled } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { notificationApi } from '../api/notification'
 import type { Notification } from '../types'
 
@@ -118,6 +131,9 @@ const total = ref(0)
 // 详情弹窗相关
 const detailDialogVisible = ref(false)
 const selectedNotification = ref<Notification | null>(null)
+
+// 清空消息请求中状态（防连点）
+const clearingAll = ref(false)
 
 /**
  * 切换下拉面板显示状态
@@ -165,6 +181,46 @@ const markAllAsRead = async () => {
     fetchNotifications()
   } catch (error) {
     console.error('标记已读失败:', error)
+  }
+}
+
+/**
+ * 清空当前用户的全部通知（二次确认后执行）
+ */
+const clearAllMessages = async () => {
+  if (clearingAll.value) return
+
+  try {
+    await ElMessageBox.confirm(
+      '将删除你收到的全部消息，不可恢复。确定要清空吗？',
+      '清空消息',
+      {
+        confirmButtonText: '确定清空',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+  } catch {
+    // 用户取消，保持现状
+    return
+  }
+
+  clearingAll.value = true
+  try {
+    const response = await notificationApi.clearAllNotifications()
+    const deleted = response.data?.deleted ?? 0
+    // 本地状态同步：列表清空、未读红点归零
+    notifications.value = []
+    unreadCount.value = 0
+    total.value = 0
+    ElMessage.success(`已清空 ${deleted} 条消息`)
+  } catch (error: any) {
+    console.error('清空消息失败:', error)
+    ElMessage.error(error?.response?.data?.message || '清空消息失败，请稍后重试')
+    // 失败不动本地列表，拉一次服务端真实状态，避免 UI 与后端不一致
+    fetchNotifications()
+  } finally {
+    clearingAll.value = false
   }
 }
 
@@ -331,6 +387,16 @@ onUnmounted(() => {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+/* 清空消息按钮：danger 醒目色，字号与"全部已读"对齐 */
+.clear-all-btn {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.clear-all-btn:hover {
+  color: #f78989;
 }
 
 .notification-list {
