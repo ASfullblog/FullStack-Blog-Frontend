@@ -24,6 +24,20 @@ export const getBloggerInfo = async (): Promise<ApiResponse<User>> => {
   return request.get('/users/1')
 }
 
+export interface PublicContact {
+  qqNumber: string
+  githubUrl: string
+  contactEmails: Array<{ label: string; addr: string; type: string }>
+}
+
+/**
+ * 获取站长公开联系方式（只含 QQ 号 / 对外邮箱 / GitHub）
+ * 单独接口：避免 qq_number 进入 /users/:id 的公开字段被批量抓取
+ */
+export const getPublicContact = async (): Promise<ApiResponse<PublicContact>> => {
+  return request.get('/users/contact/public')
+}
+
 /**
  * 更新用户信息
  * @param userId 用户ID

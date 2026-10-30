@@ -31,9 +31,9 @@
             <p class="bio">{{ aboutInfo.bio || '一名前端工程师，自学路线起步，平时把踩坑过程写成博客收在这个站里。' }}</p>
           </div>
 
-          <!-- 联系方式 -->
+          <!-- 联系方式：优先用后台 github_url / qq_number / email，缺失时回落 -->
           <div class="contact-section">
-            <a :href="GITHUB_URL" target="_blank" rel="noopener" class="contact-item">
+            <a :href="aboutInfo.githubUrl || GITHUB_URL" target="_blank" rel="noopener" class="contact-item">
               <div class="contact-icon-wrapper github">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -41,19 +41,33 @@
               </div>
               <span class="contact-text">GitHub</span>
             </a>
-            <a v-if="aboutInfo.qqNumber" :href="`tencent://message/?uin=${aboutInfo.qqNumber}`" class="contact-item">
+            <!-- QQ：不直接挂 tencent:// 链接（会把 uin 明文暴露在 URL 里，手机端也点不动）。
+                 改为弹层展示号码由用户自行复制，属于「主动获取」而非被动泄露。 -->
+            <button
+              v-if="aboutInfo.qqNumber"
+              type="button"
+              class="contact-item"
+              @click="openQQDialog"
+            >
               <div class="contact-icon-wrapper qq">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12.003 2c-2.265 0-6.29 1.364-6.29 7.325v1.195S3.55 14.96 3.55 17.474c0 .665.17 1.025.281 1.025.114 0 .902-.484 1.748-2.072 0 0-.18 2.197 1.904 3.967 0 0-1.77.495-1.77 1.182 0 .686 4.078.43 6.29.43 2.21 0 6.287.257 6.287-.43 0-.687-1.768-1.182-1.768-1.182 2.085-1.77 1.905-3.967 1.905-3.967.845 1.588 1.634 2.072 1.746 2.072.111 0 .283-.36.283-1.025 0-2.514-2.164-6.954-2.164-6.954V9.325C18.29 3.364 14.268 2 12.003 2z"/>
                 </svg>
               </div>
               <span class="contact-text">QQ</span>
-            </a>
-            <a v-if="aboutInfo.email" :href="`mailto:${aboutInfo.email}`" class="contact-item">
+            </button>
+            <!-- 对外联系邮箱：来自后端 contact_emails，登录邮箱 email 不公开 -->
+            <a
+              v-for="(mail, mi) in aboutInfo.contactEmails"
+              :key="mi"
+              :href="`mailto:${mail.addr}`"
+              class="contact-item"
+              :title="mail.addr"
+            >
               <div class="contact-icon-wrapper email">
                 <el-icon :size="20"><Message /></el-icon>
               </div>
-              <span class="contact-text">邮箱</span>
+              <span class="contact-text">{{ mail.label }}</span>
             </a>
           </div>
 
@@ -62,7 +76,7 @@
             <div class="section-header-row">
               <h3 class="section-subtitle">技术栈</h3>
             </div>
-            <div class="tags-cloud">
+            <div class="tags-cloud tech-cloud">
               <span
                 v-for="(tech, index) in coreTechTags"
                 :key="index"
@@ -70,23 +84,6 @@
                 :style="getTagStyle(index, 'tech')"
               >
                 {{ tech }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 足迹 -->
-          <div v-if="aboutInfo.visitedProvinces.length" class="tags-section">
-            <div class="section-header-row">
-              <h3 class="section-subtitle">足迹</h3>
-            </div>
-            <div class="tags-cloud">
-              <span
-                v-for="(place, index) in aboutInfo.visitedProvinces"
-                :key="index"
-                class="tag-item place"
-                :style="getTagStyle(index, 'place')"
-              >
-                {{ place }}
               </span>
             </div>
           </div>
@@ -128,57 +125,49 @@
 
       <!-- 右侧：详细介绍 -->
       <div class="about-right">
-        <!-- 个人简介 -->
-        <div class="intro-section">
-          <h2 class="section-title">👋 你好，我是这个博客的站长</h2>
-          <div class="intro-content">
-            <p>一名前端工程师，专业方向是软件技术，走的是非科班自驱路线——把啃不动的知识点拆成小块，一块块啃下来，再把啃的过程写成博客。这个站就是我的「外部大脑」：学习笔记、踩坑复盘、摘抄的句子都收在这里。</p>
-            <p>日常围着 Vue 全家桶转，最近更多在 Vue3 + TypeScript + Vite。做过后台管理系统里权限、标签、接入配置这类核心模块，也独立交付过电商类 App 的四十多个页面和整套前台 UI 设计稿；小程序 / H5 / App 多端适配、活动页埋点同样不陌生。</p>
-            <p>最近在把 AI 编码工具变成日常：重复劳动尽量自动化，生成的代码严格校验，再沉淀提示词和组件规范去约束输出质量。如果你也在学前端，或者对某篇文章有不同的做法，欢迎点左侧的 GitHub / QQ / 邮箱图标来找我唠。</p>
-          </div>
-        </div>
-
-        <!-- 能力 & 方向 -->
-        <div class="intro-section">
-          <h2 class="section-title">🧭 能力 &amp; 方向</h2>
-          <ul class="focus-list">
-            <li v-for="(point, index) in focusPoints" :key="index">{{ point }}</li>
-          </ul>
-        </div>
-
-        <!-- 技术栈详情 -->
-        <div class="intro-section">
-          <h2 class="section-title">🛠 技术栈</h2>
-          <div v-for="group in skillGroups" :key="group.name" class="skill-group">
-            <h3 class="section-subtitle skill-group-title">{{ group.name }}</h3>
-            <div class="tags-cloud">
-              <span
-                v-for="(tech, index) in group.items"
-                :key="tech"
-                class="tag-item tech"
-                :style="getTagStyle(index, 'tech')"
-              >
-                {{ tech }}
-              </span>
-            </div>
-          </div>
-        </div>
-
         <!-- 开源 & 探索 -->
         <div class="intro-section">
           <h2 class="section-title">🌱 开源 &amp; 探索</h2>
           <div class="intro-content">
-            <p>一直觉得「重复劳动就该被自动化」，所以喜欢折腾小工具。公开仓库不算多，但每个都解决过我实际遇到的麻烦：</p>
+            <p>一直觉得「重复劳动就该被自动化」，所以喜欢折腾小工具。公开仓库不算多，但每个都解决过我实际遇到的麻烦。</p>
           </div>
           <div class="intro-content repo-link-row">
-            <p>全部折腾记录都在 <a :href="GITHUB_URL" target="_blank" rel="noopener" class="github-link">GitHub：asfre</a>，欢迎围观、提 Issue，或者一起改。</p>
+            <p>全部折腾记录都在 <a :href="aboutInfo.githubUrl || GITHUB_URL" target="_blank" rel="noopener" class="github-link">GitHub：asfre</a>，欢迎围观、提 Issue，或者一起改。</p>
           </div>
         </div>
 
-        <!-- 摘抄语录 -->
-        <QuotesSection class="about-section-gap" />
+        <!-- 足迹 -->
+        <div v-if="aboutInfo.visitedProvinces.length" class="intro-section">
+          <h2 class="section-title">🧭 足迹</h2>
+          <div class="tags-cloud place-cloud">
+            <span
+              v-for="(place, index) in aboutInfo.visitedProvinces"
+              :key="index"
+              class="tag-item place"
+              :style="getTagStyle(index, 'place')"
+            >
+              {{ place }}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- QQ 弹层：号码只在这里按需展示，不进 URL -->
+    <el-dialog
+      v-model="qqDialogVisible"
+      title="通过 QQ 联系"
+      width="320px"
+      align-center
+      class="qq-dialog"
+    >
+      <p class="qq-dialog-tip">复制下面的号码，在 QQ 里搜索添加。</p>
+      <div class="qq-dialog-number">{{ aboutInfo.qqNumber }}</div>
+      <template #footer>
+        <el-button @click="qqDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="copyQQNumber">复制号码</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -189,8 +178,8 @@
  */
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Message } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { getBloggerInfo } from '../api/user'
-import QuotesSection from '../components/QuotesSection.vue'
 import { resolveAvatar, adminAvatar } from '../utils/avatar'
 
 // 站长 GitHub 主页（公开账号，页面固定指向这里）
@@ -201,11 +190,32 @@ const aboutInfo = ref({
   username: '',
   email: '',
   qqNumber: '',
+  contactEmails: [] as Array<{ label: string; addr: string; type: string }>,
   bio: '',
   githubUrl: '',
   techStack: [] as string[],
   visitedProvinces: [] as string[]
 })
+
+// QQ 弹层（号码不进 URL，点开才展示，由用户手动复制）
+const qqDialogVisible = ref(false)
+
+const openQQDialog = () => {
+  qqDialogVisible.value = true
+}
+
+const copyQQNumber = async () => {
+  const num = aboutInfo.value.qqNumber
+  if (!num) return
+  try {
+    await navigator.clipboard.writeText(num)
+    ElMessage.success('号码已复制')
+  } catch {
+    // 非安全上下文（http / 旧浏览器）会拒绝 clipboard API，退回到选中提示
+    ElMessage.warning('复制失败，请手动选中号码复制')
+  }
+  qqDialogVisible.value = false
+}
 
 // 加载状态
 const loading = ref(true)
@@ -232,24 +242,7 @@ const wordCloudKeywords = [
   '首屏优化', '长列表渲染', 'Core Web Vitals', '跨域联调', 'React', '可访问性'
 ]
 
-// 能力与方向 - 经历抽象为能力描述，不指向具体单位或项目
-const focusPoints = [
-  '熟悉 Vue2 / Vue3 全家桶与 Composition API，习惯把功能逻辑拆解成可复用组件',
-  '主导过多个后台管理系统核心模块的前端开发（权限 / 标签 / 接入配置类业务方向）',
-  '独立交付过电商类 App 的 40+ 页面与整套前台 UI 设计稿',
-  '做过小程序 / H5 / App 多端一致体验适配，以及活动页埋点',
-  '关注性能与体验：首屏优化、长列表渲染、接口缓存、Core Web Vitals、可访问性',
-  '日常用 AI 编码工具辅助重构提效：校验生成代码，沉淀提示词与组件化规范约束输出质量'
-]
-
-// 技术栈分组明细 - 全部读自后台 tech_stack（不硬编码任何清单）
-const skillGroups = ref<{ name: string; items: string[] }[]>([])
-const buildSkillGroups = () => {
-  const list = aboutInfo.value.techStack?.length
-    ? aboutInfo.value.techStack
-    : ['Vue.js', 'TypeScript', 'Node.js', 'UniApp', 'Element Plus', 'Vite']
-  skillGroups.value = [{ name: '技术栈', items: list }]
-}
+// 能力与方向已并入 bio，不再硬编码重复文案；技术栈统一在左栏展示一次
 
 // 3D球体词云数据类型
 interface WordCloudItem {
@@ -283,7 +276,7 @@ const sphereState = ref({
   velocityX: 0,
   velocityY: 0,
   autoRotate: true,
-  radius: 80 // 球体半径（像素）
+  radius: 100 // 球体半径（像素）—— 需明显大于词的字号，同时左右各留出半词宽的余量，避免长词被容器裁切
 })
 
 // 动画帧ID
@@ -337,9 +330,9 @@ const generateWordCloud = () => {
     const phi = Math.acos(1 - 2 * (index + 0.5) / total) // 极角 0 ~ π
     const theta = Math.PI * (3 - Math.sqrt(5)) * index    // 方位角（黄金角）
 
-    // 根据词的重要性计算大小
+    // 根据词的重要性计算大小（档位收窄，避免大字撑破球面、互相压字）
     const importance = 1 - (index / total)
-    const size = Math.floor(12 + importance * 16) // 12-28px
+    const size = Math.floor(12 + importance * 10) // 12-22px
 
     // 计算初始3D坐标
     const x0 = radius * Math.sin(phi) * Math.cos(theta)
@@ -570,6 +563,8 @@ const handleTouchEnd = () => {
 }
 
 // 获取标签样式
+// 技术栈：保留色彩区分（技能分类的视觉线索）
+// 足迹：统一中性色，不按 index 循环取色 —— 地名本身就是信息，七色彩虹反而显乱
 const getTagStyle = (index: number, type: 'tech' | 'place') => {
   const techColors = [
     { bg: '#e3f2fd', border: '#2196f3', text: '#1976d2' },
@@ -580,16 +575,18 @@ const getTagStyle = (index: number, type: 'tech' | 'place') => {
     { bg: '#e0f2f1', border: '#009688', text: '#00796b' }
   ]
 
-  const placeColors = [
-    { bg: '#fff8e1', border: '#ffc107', text: '#ffa000' },
-    { bg: '#e8eaf6', border: '#3f51b5', text: '#303f9f' },
-    { bg: '#fbe9e7', border: '#ff5722', text: '#e64a19' },
-    { bg: '#e0f7fa', border: '#00bcd4', text: '#0097a7' },
-    { bg: '#f3e5f5', border: '#9c27b0', text: '#7b1fa2' }
-  ]
+  if (type === 'place') {
+    // 只用一套中性色，靠透明度做极轻微的层次差，不抢视觉
+    const opacity = Math.min(0.55 + (index % 3) * 0.1, 0.95)
+    return {
+      backgroundColor: 'transparent',
+      borderColor: 'var(--border-color)',
+      color: 'var(--text-secondary)',
+      opacity: String(opacity)
+    }
+  }
 
-  const colors = type === 'tech' ? techColors : placeColors
-  const color = colors[index % colors.length]
+  const color = techColors[index % techColors.length]
 
   return {
     backgroundColor: color.bg,
@@ -606,9 +603,18 @@ const fetchAboutInfo = async () => {
     if (response.data) {
       const user = response.data
       aboutInfo.value.username = user.username || ''
-      aboutInfo.value.email = user.email || ''
       aboutInfo.value.qqNumber = (user as any).qq_number || ''
       aboutInfo.value.githubUrl = (user as any).github_url || ''
+      // 对外联系邮箱：只读 contact_emails（登录用 email 不公开，避免被爬虫扒走）
+      const ce = (user as any).contact_emails
+      const mailList = Array.isArray(ce) ? ce : (typeof ce === 'string' ? safeParseArray(ce) : [])
+      aboutInfo.value.contactEmails = (mailList as any[])
+        .filter((m) => m && m.addr)
+        .map((m) => ({
+          label: m.label || '邮箱',
+          addr: m.addr,
+          type: m.type || 'other'
+        }))
       // bio / 技术栈 / 足迹 全部来自后台，并走去标识化兜底
       aboutInfo.value.bio = sanitize(user.bio || '')
       const ts = (user as any).tech_stack
@@ -617,11 +623,10 @@ const fetchAboutInfo = async () => {
       aboutInfo.value.visitedProvinces = Array.isArray(vp) ? vp : (typeof vp === 'string' ? safeParseArray(vp) : [])
       // admin 由 resolveAvatar 固定映射到本地头像，其他用户保持原逻辑
       userAvatar.value = resolveAvatar(user)
-      // 左侧技术标签 + 右侧技术栈分组，都从后台 tech_stack 派生
+      // 左侧技术标签，从后台 tech_stack 派生（页面只展示这一份平铺标签）
       coreTechTags.value = aboutInfo.value.techStack.length
         ? aboutInfo.value.techStack
         : ['Vue.js', 'TypeScript', 'Node.js', 'UniApp', 'Element Plus', 'Vite']
-      buildSkillGroups()
     }
   } catch (error) {
     console.error('获取博主信息失败:', error)
@@ -743,61 +748,67 @@ onUnmounted(() => {
   font-size: 0.9rem;
   color: var(--text-secondary);
   line-height: 1.5;
+  text-align: left !important;
 }
 
-/* 联系方式 */
+/* 联系方式：小胶囊横排，跟技术栈标签同一套调性 */
 .contact-section {
   display: flex;
-  justify-content: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .contact-item {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
+  flex-direction: row;
   align-items: center;
   gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
   text-decoration: none;
-  transition: transform 0.3s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .contact-item:hover {
-  transform: translateY(-3px);
+  background: var(--bg-secondary);
+  border-color: var(--accent-color);
 }
 
 .contact-icon-wrapper {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+  background: none !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: none;
 }
 
 .contact-icon-wrapper svg,
 .contact-icon-wrapper .el-icon {
-  width: 22px;
-  height: 22px;
-  color: white;
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary);
 }
 
-.contact-icon-wrapper.github {
-  background: linear-gradient(135deg, #333 0%, #666 100%);
-}
-
-.contact-icon-wrapper.qq {
-  background: linear-gradient(135deg, #12b7f5 0%, #0099ff 100%);
-}
-
-.contact-icon-wrapper.email {
-  background: linear-gradient(135deg, #ea4335 0%, #fbbc05 100%);
+.contact-item:hover .contact-icon-wrapper svg,
+.contact-item:hover .contact-icon-wrapper .el-icon {
+  color: var(--accent-color);
 }
 
 .contact-text {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
   color: var(--text-secondary);
+}
+
+.contact-item:hover .contact-text {
+  color: var(--accent-color);
 }
 
 /* 标签区域 */
@@ -842,6 +853,39 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px var(--shadow-color);
 }
 
+/* 技术栈标签：小块、弱主体性，padding/margin 与足迹标签区分开
+   目标是「一眼扫过、不抢主视觉」，配色/圆角沿用页面同一套变量，避免 AI 味 */
+.tags-cloud.tech-cloud {
+  gap: 6px 8px;
+}
+
+.tag-item.tech {
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+  opacity: 0.82;
+}
+
+/* 技术栈块悬停只轻微提亮，不做位移，保持"弱主体"的从属感 */
+.tag-item.tech:hover {
+  transform: none;
+  box-shadow: none;
+  opacity: 1;
+}
+
+/* 足迹标签保持原样（同为小圆角胶囊，但尺寸与间距明显区别） */
+.tags-cloud.place-cloud {
+  gap: 8px;
+}
+
+.tag-item.place {
+  padding: 5px 12px;
+  font-size: 0.78rem;
+}
+
 /* 词云图 - 3D球体设计 */
 .wordcloud-section {
   margin-bottom: 0;
@@ -850,7 +894,7 @@ onUnmounted(() => {
 /* 词云容器 - 3D球体场景 */
 .wordcloud-container {
   position: relative;
-  height: 220px;
+  height: 300px;
   background: radial-gradient(
     ellipse at center,
     rgba(99, 102, 241, 0.08) 0%,
@@ -948,10 +992,6 @@ onUnmounted(() => {
 
 .intro-content p:last-child {
   margin-bottom: 0;
-}
-
-.about-section-gap {
-  margin-top: 0;
 }
 
 /* 右侧新增区块：列表与分组（沿用现有卡片风格与主题变量） */

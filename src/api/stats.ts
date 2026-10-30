@@ -1,10 +1,12 @@
 import request from '../utils/request'
 import type { ApiResponse } from '../types'
 
-/** 省份分布：后端只给聚合结果，无任何 IP / UA / path 明细 */
+/** 地理分布：country + province 两级；中国=省，海外=国家（province 即中文国名） */
 export interface GeoItem {
+  country: string
   province: string
   count: number
+  total: number
 }
 
 /** 每日访问趋势（后端已用 generate_series 补齐，长度恒等于 days，缺失日为 0） */
@@ -25,7 +27,7 @@ export interface StatsOverview {
 }
 
 export const statsApi = {
-  /** 省份分布（按人次倒序） */
+  /** 地理分布（按人次倒序，含国家/省份与总人次） */
   getGeo: async (): Promise<ApiResponse<GeoItem[]>> => {
     return (await request.get('/stats/geo')) as unknown as ApiResponse<GeoItem[]>
   },

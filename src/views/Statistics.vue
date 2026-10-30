@@ -8,6 +8,7 @@
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue';
 import statsApi, { type GeoItem, type StatsOverview, type TrendPoint } from '../api/stats';
 import { getProvinceCoord } from '../components/stats/provinceCoords';
+import { getCountryCoord } from '../components/stats/countryCoords';
 
 // three / echarts 体积大：懒加载成独立 chunk，不进主包
 const GlobeChart = defineAsyncComponent(() => import('../components/stats/GlobeChart.vue'));
@@ -20,6 +21,7 @@ const geo = ref<GeoItem[]>([]);
 const trend = ref<TrendPoint[]>([]);
 const overview = ref<StatsOverview | null>(null);
 const trendDays = ref(30);
+const trendType = ref<'line' | 'bar'>('line');
 const updatedAt = ref('');
 
 const trendOptions = [
@@ -28,27 +30,35 @@ const trendOptions = [
   { label: '近 90 天', value: 90 }
 ];
 
+const chartTypes = [
+  { label: '折线', value: 'line' as const },
+  { label: '柱状', value: 'bar' as const }
+];
+
 const fmt = (n?: number) => (typeof n === 'number' ? n.toLocaleString('zh-CN') : '--');
 
 const totalViews = computed(() => overview.value?.totalViews ?? 0);
 const hasData = computed(() => totalViews.value > 0 || geo.value.length > 0 || trend.value.some((t) => t.views > 0));
 
-/** 能落到地球上的点位（有坐标的国内省份） */
-const geoPoints = computed(() => geo.value.filter((g) => !!getProvinceCoord(g.province)));
+/** 能落到地球上的点位（有坐标的国内省份 + 海外国家） */
+const geoPoints = computed(() =>
+  geo.value.filter((g) => !!getProvinceCoord(g.province) || !!getCountryCoord(g.province))
+);
 
-/** 无法定位的（海外 / 其它）单独列，不上球也不冒充省份 */
-const otherRegions = computed(() => geo.value.filter((g) => !getProvinceCoord(g.province)));
+/** 展示名：中国省份显示省名，海外显示国名 */
+const displayName = (g: GeoItem) => (g.country === '中国' ? g.province : g.country || g.province);
 
 const maxCount = computed(() => geoPoints.value.reduce((m, g) => Math.max(m, g.count), 0));
 
 const ranked = computed(() =>
   geoPoints.value.slice(0, 12).map((g) => ({
     ...g,
+    name: displayName(g),
     pct: maxCount.value > 0 ? Math.round((g.count / maxCount.value) * 100) : 0
   }))
 );
 
-const topProvince = computed(() => geoPoints.value[0]);
+const topProvince = computed(() => (geoPoints.value[0] ? { ...geoPoints.value[0], name: displayName(geoPoints.value[0]) } : undefined));
 
 const cards = computed(() => [
   { key: 'today', label: '今日访问', value: overview.value?.todayViews, unit: '人次', icon: '日' },
@@ -83,6 +93,11 @@ const switchDays = (d: number) => {
   loadTrend();
 };
 
+const switchType = (t: 'line' | 'bar') => {
+  if (trendType.value === t) return;
+  trendType.value = t;
+};
+
 const loadAll = async () => {
   loading.value = true;
   errorMsg.value = '';
@@ -107,7 +122,6 @@ onMounted(loadAll);
     <!-- 页头 -->
     <header class="stats-head">
       <div class="head-text">
-        <h1 class="head-title">数据统计</h1>
         <p class="head-sub">
           {{ hasData ? `这份小站一共被访问了 ${fmt(totalViews)} 次，来自 ${fmt(overview?.provinceCount)} 个地区` : '正在收集大家的脚印' }}
           <span v-if="updatedAt" class="head-time">· 更新于 {{ updatedAt }}</span>
@@ -157,7 +171,7 @@ onMounted(loadAll);
           </div>
 
           <div v-if="topProvince" class="hero-top">
-            TOP1 · {{ topProvince.province }}
+            TOP1 · {{ topProvince.name }}
             <b>{{ fmt(topProvince.count) }}</b> 人次
           </div>
         </div>
@@ -182,65 +196,62 @@ onMounted(loadAll);
       <section class="panel">
         <div class="panel-head">
           <h2 class="panel-title">访问量趋势</h2>
-          <div class="days-tabs">
-            <button
-              v-for="opt in trendOptions"
-              :key="opt.value"
-              type="button"
-              class="days-tab"
-              :class="{ active: trendDays === opt.value }"
-              @click="switchDays(opt.value)"
-            >
-              {{ opt.label }}
-            </button>
+          <div class="head-tools">
+            <div class="days-tabs">
+              <button
+                v-for="opt in chartTypes"
+                :key="opt.value"
+                type="button"
+                class="days-tab"
+                :class="{ active: trendType === opt.value }"
+                @click="switchType(opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
+            <div class="days-tabs">
+              <button
+                v-for="opt in trendOptions"
+                :key="opt.value"
+                type="button"
+                class="days-tab"
+                :class="{ active: trendDays === opt.value }"
+                @click="switchDays(opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
           </div>
         </div>
         <div class="panel-body" :class="{ dim: trendLoading }">
-          <TrendLine :data="trend" :height="340" />
+          <TrendLine :data="trend" :height="340" :type="trendType" />
         </div>
       </section>
 
-      <!-- 排行 + 其它地区 -->
-      <section class="two-col">
-        <article class="panel">
-          <div class="panel-head">
-            <h2 class="panel-title">地区排行</h2>
-            <span class="panel-tip">只统计能定位到省份的访问</span>
-          </div>
-          <div class="panel-body">
-            <ol v-if="ranked.length" class="rank-list">
-              <li v-for="(r, i) in ranked" :key="r.province" class="rank-item">
-                <span class="rank-no" :class="{ hot: i < 3 }">{{ i + 1 }}</span>
-                <span class="rank-name">{{ r.province }}</span>
-                <span class="rank-bar">
-                  <i class="rank-fill" :style="{ width: r.pct + '%' }" />
-                </span>
-                <span class="rank-num">{{ fmt(r.count) }}</span>
-              </li>
-            </ol>
-            <p v-else class="inline-empty">暂无省份数据</p>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="panel-head">
-            <h2 class="panel-title">其它 / 海外</h2>
-            <span class="panel-tip">无法归到省份的部分</span>
-          </div>
-          <div class="panel-body">
-            <div v-if="otherRegions.length" class="chip-list">
-              <span v-for="o in otherRegions" :key="o.province" class="chip">
-                {{ o.province }}<b>{{ fmt(o.count) }}</b>
+      <!-- 地区排行 -->
+      <section class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">地区排行</h2>
+          <span class="panel-tip">中国到省、海外到国家，按访问人次排序</span>
+        </div>
+        <div class="panel-body">
+          <ol v-if="ranked.length" class="rank-list">
+            <li v-for="(r, i) in ranked" :key="r.country + r.province" class="rank-item">
+              <span class="rank-no" :class="{ hot: i < 3 }">{{ i + 1 }}</span>
+              <span class="rank-name">{{ r.name }}</span>
+              <span class="rank-bar">
+                <i class="rank-fill" :style="{ width: r.pct + '%' }" />
               </span>
-            </div>
-            <p v-else class="inline-empty">没有来源不明的访问，干净 👌</p>
-            <ul class="note-list">
-              <li>光点按<b>省份人次</b>聚合，同一个人多次访问只算人次。</li>
-              <li>统计口径为北京时间（{{ overview?.timezone || 'UTC+8' }}）。</li>
-              <li>这里看不到、也不存储任何访客的 IP、设备或具体页面。</li>
-            </ul>
-          </div>
-        </article>
+              <span class="rank-num">{{ fmt(r.count) }}</span>
+            </li>
+          </ol>
+          <p v-else class="inline-empty">暂无地区数据</p>
+          <ul class="note-list" style="margin-top: 0.9rem">
+            <li>光点按<b>地区人次</b>聚合，同一个人多次访问只算人次。</li>
+            <li>统计口径为北京时间（{{ overview?.timezone || 'UTC+8' }}）。</li>
+            <li>这里看不到、也不存储任何访客的 IP、设备或具体页面。</li>
+          </ul>
+        </div>
       </section>
     </template>
   </div>
@@ -564,6 +575,13 @@ onMounted(loadAll);
   background: var(--bg-tertiary);
 }
 
+.head-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
 .days-tab {
   padding: 0.32rem 0.85rem;
   border: none;
@@ -651,30 +669,6 @@ onMounted(loadAll);
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--text-secondary);
-}
-
-.chip-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 1rem;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.28rem 0.7rem;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-}
-
-.chip b {
-  color: var(--accent-color);
-  font-variant-numeric: tabular-nums;
 }
 
 .note-list {

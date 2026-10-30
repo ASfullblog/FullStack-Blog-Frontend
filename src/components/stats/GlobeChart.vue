@@ -12,6 +12,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import * as THREE from 'three';
 import { useThemeStore } from '../../stores/themeStore';
 import { getProvinceCoord, DEFAULT_GLOBE } from './provinceCoords';
+import { getCountryCoord } from './countryCoords';
 import type { GeoItem } from '../../api/stats';
 
 const props = withDefaults(
@@ -316,7 +317,10 @@ const clearMarkers = () => {
 const buildMarkers = () => {
   if (!markersGroup || !dotGeo) return;
   clearMarkers();
-  const list = (props.data || []).filter((d) => getProvinceCoord(d.province));
+  // 每条数据优先按中国省份坐标，命中则打省点；否则按海外国家坐标（province 列存的是中文国名）
+  const list = (props.data || []).filter(
+    (d) => getProvinceCoord(d.province) || getCountryCoord(d.province)
+  );
   if (!list.length) return;
   const max = Math.max(...list.map((d) => d.count), 1);
   const c = themeColors();
@@ -336,16 +340,17 @@ const buildMarkers = () => {
   });
   markerDisposables.push(dotMat, pillarMat, glowMat);
 
-  // 同省重名合并（后端已 GROUP BY，这里纯防御）
+  // 同区块重名合并（后端已 GROUP BY，这里纯防御）；key 用 country|province 避免跨国重名
   const merged = new Map<string, GeoItem>();
   for (const d of list) {
-    const cur = merged.get(d.province);
+    const key = `${d.country}|${d.province}`;
+    const cur = merged.get(key);
     if (cur) cur.count += d.count;
-    else merged.set(d.province, { ...d });
+    else merged.set(key, { ...d });
   }
 
   for (const item of merged.values()) {
-    const coord = getProvinceCoord(item.province)!;
+    const coord = getProvinceCoord(item.province) || getCountryCoord(item.province)!;
     const norm = Math.sqrt(item.count / max);
     const height = 0.035 + 0.26 * norm;
     const inner = latLngToVec3(coord.lat, coord.lng, RADIUS * 1.002, new THREE.Vector3());
@@ -434,7 +439,7 @@ const showTip = (m: MarkerRef, clientX: number, clientY: number) => {
     show: true,
     x: Math.min(Math.max(clientX - rect.left + 12, 8), rect.width - 132),
     y: Math.max(clientY - rect.top - 40, 8),
-    name: m.item.province,
+    name: m.item.country === '中国' ? m.item.province : m.item.country || m.item.province,
     count: m.item.count
   };
 };
@@ -508,6 +513,18 @@ const onWheelBlock = (e: WheelEvent) => {
 const zoomBy = (factor: number) => {
   state.zoom = THREE.MathUtils.clamp(state.zoom * factor, ZOOM_MIN, ZOOM_MAX);
   if (camera) camera.position.z = state.zoom;
+};
+
+/** 键盘缩放：+ / - / = 放大，_ / - 缩小（数字小键盘 +- 也兼容） */
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+  if (e.key === '+' || e.key === '=') {
+    e.preventDefault();
+    zoomBy(0.86);
+  } else if (e.key === '-' || e.key === '_') {
+    e.preventDefault();
+    zoomBy(1.16);
+  }
 };
 
 const onPinchStart = (e: TouchEvent) => {
@@ -679,6 +696,7 @@ const setup = () => {
   canvas.addEventListener('touchend', onPinchEnd);
   canvas.addEventListener('touchcancel', onPinchEnd);
   canvas.addEventListener('wheel', onWheelBlock, { passive: true });
+  document.addEventListener('keydown', onKeydown);
   offDocument.push(() => {
     canvas.removeEventListener('pointerdown', onPointerDown);
     canvas.removeEventListener('pointermove', onPointerMove);
@@ -690,6 +708,7 @@ const setup = () => {
     canvas.removeEventListener('touchend', onPinchEnd);
     canvas.removeEventListener('touchcancel', onPinchEnd);
     canvas.removeEventListener('wheel', onWheelBlock);
+    document.removeEventListener('keydown', onKeydown);
   });
 
   // 尺寸自适应

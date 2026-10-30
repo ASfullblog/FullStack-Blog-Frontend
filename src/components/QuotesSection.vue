@@ -1,6 +1,7 @@
 <template>
   <!-- 摘抄语录组件 - 展示经典语录和名言（新排版设计） -->
-  <div class="quotes-section">
+  <!-- compact：页脚等窄场景使用，缩小内边距与字号，图标保持不变 -->
+  <div class="quotes-section" :class="{ 'is-compact': compact }">
     <!-- 标题区域 -->
     <div class="section-header">
       <div class="title-wrapper">
@@ -59,6 +60,11 @@ import {
   getQuotes,
   type Quote
 } from '../api/quotes'
+
+/**
+ * compact：紧凑模式（用于全站页脚），只压缩尺寸，不改变图标与文案结构
+ */
+withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
 
 // 语录列表
 const quotes = ref<Quote[]>([])
@@ -170,7 +176,6 @@ onMounted(() => {
 /* 标题区域 */
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   margin-bottom: 28px;
 }
@@ -179,6 +184,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .title-icon {
@@ -332,6 +339,130 @@ onMounted(() => {
   font-size: 12px;
   color: var(--text-tertiary);
   font-style: italic;
+}
+
+/* ===== 紧凑模式：用于全站页脚，缩小尺寸但保留图标与结构 ===== */
+.quotes-section.is-compact {
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: none;
+  background: transparent;
+}
+
+.quotes-section.is-compact::before {
+  display: none;
+}
+
+.quotes-section.is-compact .section-header {
+  margin-bottom: 6px;
+}
+
+.quotes-section.is-compact .title-wrapper {
+  gap: 6px;
+}
+
+.quotes-section.is-compact .section-title {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+/* 图标尺寸不变，只去掉脉冲动画 */
+.quotes-section.is-compact .title-icon {
+  animation: none;
+  opacity: 0.85;
+}
+
+.quotes-section.is-compact .title-decoration {
+  width: 18px;
+  height: 1px;
+}
+
+.quotes-section.is-compact .refresh-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 11px;
+  margin-left: 10px;
+  box-shadow: 1px 2px 2px #eee;
+}
+
+.quotes-section.is-compact .quote-main-card {
+  border-radius: 0;
+  padding: 4px 12px;
+  margin-bottom: 0;
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0 8px;
+}
+
+.quotes-section.is-compact .quote-decoration {
+  font-size: 30px;
+  opacity: 0.06;
+}
+
+.quotes-section.is-compact .quote-decoration-left {
+  top: -4px;
+  left: 0;
+}
+
+.quotes-section.is-compact .quote-decoration-right {
+  bottom: -12px;
+  right: 0;
+}
+
+.quotes-section.is-compact .quote-content-cn {
+  margin-bottom: 0;
+}
+
+.quotes-section.is-compact .quote-text-cn {
+  font-size: 12px;
+  line-height: 1.6;
+  font-weight: 400;
+  display: inline;
+}
+
+.quotes-section.is-compact .quote-content-en {
+  margin-bottom: 0;
+  display: none;
+}
+
+.quotes-section.is-compact .quote-text-en {
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.quotes-section.is-compact .quote-author-section {
+  display: inline;
+  gap: 0;
+}
+
+.quotes-section.is-compact .author-divider {
+  display: none;
+}
+
+.quotes-section.is-compact .author-info {
+  display: inline;
+  flex-direction: row;
+  gap: 0;
+}
+
+.quotes-section.is-compact .author-name-cn {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.quotes-section.is-compact .author-name-cn::before {
+  content: '— ';
+}
+
+.quotes-section.is-compact .author-name-en {
+  display: none;
 }
 
 /* 响应式适配 */

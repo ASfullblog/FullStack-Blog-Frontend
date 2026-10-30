@@ -5,20 +5,21 @@
  */
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import * as echarts from 'echarts/core';
-import { LineChart } from 'echarts/charts';
+import { LineChart, BarChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, MarkLineComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { useThemeStore } from '../../stores/themeStore';
 import type { TrendPoint } from '../../api/stats';
 
-echarts.use([LineChart, GridComponent, TooltipComponent, MarkLineComponent, CanvasRenderer]);
+echarts.use([LineChart, BarChart, GridComponent, TooltipComponent, MarkLineComponent, CanvasRenderer]);
 
 const props = withDefaults(
   defineProps<{
     data?: TrendPoint[];
     height?: number;
+    type?: 'line' | 'bar';
   }>(),
-  { data: () => [], height: 320 }
+  { data: () => [], height: 320, type: 'line' }
 );
 
 const el = ref<HTMLDivElement | null>(null);
@@ -62,6 +63,7 @@ const buildOption = (): Record<string, unknown> => {
   const dates = props.data.map((d) => d.date);
   const views = props.data.map((d) => d.views);
   const isNarrow = (el.value?.clientWidth || 600) < 520;
+  const isBar = props.type === 'bar';
 
   return {
     animationDuration: 520,
@@ -95,7 +97,7 @@ const buildOption = (): Record<string, unknown> => {
     },
     xAxis: {
       type: 'category',
-      boundaryGap: false,
+      boundaryGap: isBar,
       data: dates,
       axisLine: { lineStyle: { color: border } },
       axisTick: { show: false },
@@ -118,29 +120,34 @@ const buildOption = (): Record<string, unknown> => {
     series: [
       {
         name: '访问量',
-        type: 'line',
-        smooth: true,
+        type: isBar ? 'bar' : 'line',
+        smooth: !isBar,
         showSymbol: false,
         symbol: 'circle',
         symbolSize: 7,
         data: views,
+        barMaxWidth: 28,
         lineStyle: { width: 2.4, color: accent, shadowColor: withAlpha(accent, 0.35), shadowBlur: 8, shadowOffsetY: 3 },
-        itemStyle: { color: accent, borderColor: cardBg, borderWidth: 2 },
+        itemStyle: isBar
+          ? { color: accent, borderRadius: [4, 4, 0, 0] }
+          : { color: accent, borderColor: cardBg, borderWidth: 2 },
         emphasis: { focus: 'series', scale: 1.4 },
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: withAlpha(accent, 0.34) },
-              { offset: 0.55, color: withAlpha(accent, 0.12) },
-              { offset: 1, color: withAlpha(secondary, 0.02) }
-            ]
-          }
-        },
+        areaStyle: isBar
+          ? undefined
+          : {
+              color: {
+                type: 'linear',
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [
+                  { offset: 0, color: withAlpha(accent, 0.34) },
+                  { offset: 0.55, color: withAlpha(accent, 0.12) },
+                  { offset: 1, color: withAlpha(secondary, 0.02) }
+                ]
+              }
+            },
         markLine: {
           silent: true,
           symbol: 'none',
@@ -174,6 +181,7 @@ const setup = () => {
 onMounted(setup);
 
 watch(() => props.data, render, { deep: false });
+watch(() => props.type, render);
 watch(() => themeStore.currentTheme, () => {
   // 主题变了：重读 CSS 变量并整图重绘
   render();

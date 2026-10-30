@@ -96,8 +96,10 @@
         isScrolled ? 'footer-scrolled' : 'footer-transparent'
       ]"
     >
-      <div class="container mx-auto px-4 footer-text">
-        <p>© 2026 FullStack-Blog. All rights reserved.</p>
+      <div class="container">
+        <!-- 摘抄语录（紧凑版，全站页脚可见；图标与文案结构保持不变） -->
+        <QuotesSection compact class="footer-quotes" />
+        <p class="footer-text">© 2026 FullStack-Blog. All rights reserved.</p>
       </div>
     </footer>
   </div>
@@ -115,6 +117,7 @@ import { HomeFilled, Folder, Grid, Search, User } from '@element-plus/icons-vue'
 import SearchBox from '../components/SearchBox.vue'
 import NavMenu from '../components/NavMenu.vue'
 import UserActions from '../components/UserActions.vue'
+import QuotesSection from '../components/QuotesSection.vue'
 import { useUserStore } from '../stores/userStore'
 import { resolveAvatar } from '../utils/avatar'
 
@@ -215,8 +218,23 @@ onUnmounted(() => {
 /* 页脚样式 */
 .footer {
   text-align: center;
-  padding: 1rem 0;
+  margin: 0.5rem 0;
   transition: all 0.3s ease;
+}
+
+/* 页脚容器：与主内容区同宽，上下留一点呼吸 */
+.container {
+  max-width: 64rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* 页脚里的摘抄语录：限宽居中，作为页脚注脚出现，不喧宾夺主 */
+.footer-quotes {
+  max-width: 640px;
+  text-align: center;
 }
 
 .footer-scrolled {
