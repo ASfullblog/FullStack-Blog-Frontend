@@ -61,7 +61,7 @@
         :data="recentPosts"
         style="width: 100%"
       >
-        <el-table-column type="index" label="#" width="60" align="center" />
+        <el-table-column type="index" label="序号" width="60" align="center" />
         <el-table-column prop="title" label="标题" min-width="320">
           <template #default="{ row }">
             <a class="post-title" @click="handlePreviewPost(row)">{{ row.title }}</a>
@@ -80,14 +80,6 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
-          <template #default="{ row }">
-            <el-button type="primary" size="small" @click="editPost(row.id)">
-              <el-icon><Edit /></el-icon>
-              编辑
-            </el-button>
-          </template>
-        </el-table-column>
       </el-table>
     </div>
 
@@ -98,12 +90,10 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import {
   ChatLineRound,
   Collection,
   Document,
-  Edit,
   View
 } from '@element-plus/icons-vue'
 import request from '../../utils/request'
@@ -123,7 +113,6 @@ interface DashboardStats {
 // 最近文章只取最新发布的 5 条
 const RECENT_POST_LIMIT = 5
 
-const router = useRouter()
 const recentPosts = ref<Post[]>([])
 const tableLoading = ref(false)
 const previewVisible = ref(false)
@@ -146,11 +135,6 @@ const formatDate = (dateString: string) =>
     minute: '2-digit'
   })
 
-const editPost = (id: number) => {
-  router.push(`/admin/posts/edit/${id}`)
-}
-
-// 点击标题：弹窗预览（不再跳新标签页）
 const handlePreviewPost = (row: Post) => {
   previewPost.value = row
   previewVisible.value = true

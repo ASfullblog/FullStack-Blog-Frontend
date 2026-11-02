@@ -71,50 +71,63 @@ const isActive = (path: string): boolean => {
 </script>
 
 <style scoped>
+/* 导航链接：跟随主题的文字色，激活用一条短下划线 + 加粗，不加渐变 */
 .nav-link {
-  color: #4b5563;
-  transition: all 0.3s ease;
   position: relative;
-  padding: 4px 0;
+  display: inline-block;
+  padding: 6px 0;
   font-size: 14px;
-}
-
-/* 移动端样式 */
-@media (max-width: 745px) {
-  .nav-link {
-    font-size: 12px;
-  }
+  color: var(--text-secondary, #5c5c58);
+  transition: color 0.16s ease;
 }
 
 .nav-link:hover {
-  color: #4f46e5;
+  color: var(--text-color, #1b1b1a);
 }
 
 .nav-link.active {
-  color: #4f46e5;
+  color: var(--text-color, #1b1b1a);
   font-weight: 600;
 }
 
 .nav-link::after {
   content: '';
   position: absolute;
-  bottom: 0;
   left: 0;
-  width: 0;
+  right: 0;
+  bottom: 0;
   height: 2px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  transition: width 0.3s ease;
+  border-radius: 1px;
+  background: var(--accent-color, #2f5d8f);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.18s ease;
 }
 
-.nav-link:hover::after,
+.nav-link:hover::after {
+  transform: scaleX(0.4);
+  opacity: 0.5;
+}
+
 .nav-link.active::after {
-  width: 100%;
+  transform: scaleX(1);
+  opacity: 1;
 }
 
-/* 移动端移除下划线效果 */
-@media (max-width: 745px) {
+@media (max-width: 768px) {
+  .nav-link {
+    font-size: 12px;
+  }
+
   .nav-link::after {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-link,
+  .nav-link::after {
+    transition: none;
   }
 }
 </style>

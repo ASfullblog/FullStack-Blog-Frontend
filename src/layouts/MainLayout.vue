@@ -35,57 +35,49 @@
     <!-- 移动端底部导航栏 -->
     <nav
       v-if="isMobile"
-      class="fixed bottom-0 left-0 right-0 z-50"
+      class="fixed bottom-0 left-0 right-0 z-50 mobile-tabbar"
     >
-      <!-- 简约底部导航 -->
-      <div class="bg-[var(--card-bg)] border-t border-[var(--border-color)] py-2 px-2">
-        <div class="flex items-center justify-around">
-          <!-- 首页 -->
-          <router-link to="/" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/', 'text-gray-500': route.path !== '/'}">
-            <el-icon :size="22"><HomeFilled /></el-icon>
-            <span class="text-[10px] mt-1 font-medium">首页</span>
-          </router-link>
-          
-          <!-- 归档 -->
-          <router-link to="/archive" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/archive', 'text-gray-500': route.path !== '/archive'}">
-            <el-icon :size="22"><Folder /></el-icon>
-            <span class="text-[10px] mt-1 font-medium">归档</span>
-          </router-link>
-          
-          <!-- 分类 -->
-          <router-link to="/categories" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/categories', 'text-gray-500': route.path !== '/categories'}">
-            <el-icon :size="22"><Grid /></el-icon>
-            <span class="text-[10px] mt-1 font-medium">分类</span>
-          </router-link>
-          
-          <!-- 搜索 -->
-          <button @click="toggleMobileSearch" class="flex flex-col items-center py-1 px-3 min-w-[3rem] text-gray-500">
-            <el-icon :size="22"><Search /></el-icon>
-            <span class="text-[10px] mt-1 font-medium">搜索</span>
-          </button>
-          
-          <!-- 我的 -->
-          <router-link v-if="userStore.isLoggedIn" to="/about" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/about', 'text-gray-500': route.path !== '/about'}">
-            <img :src="userAvatar" class="w-5 h-5 rounded-full" />
-            <span class="text-[10px] mt-1 font-medium">关于我</span>
-          </router-link>
-          <router-link v-else to="/login" class="flex flex-col items-center py-1 px-3 min-w-[3rem]" :class="{'text-primary-600': route.path === '/login', 'text-gray-500': route.path !== '/login'}">
-            <el-icon :size="22"><User /></el-icon>
-            <span class="text-[10px] mt-1 font-medium">登录</span>
-          </router-link>
-        </div>
+      <div class="tabbar-inner">
+        <router-link to="/" class="tab-item" :class="{ 'is-active': route.path === '/' }">
+          <AppIcon name="home" :size="21" :stroke="1.7" />
+          <span class="tab-label">首页</span>
+        </router-link>
+
+        <router-link to="/archive" class="tab-item" :class="{ 'is-active': route.path === '/archive' }">
+          <AppIcon name="folder" :size="21" :stroke="1.7" />
+          <span class="tab-label">归档</span>
+        </router-link>
+
+        <router-link to="/categories" class="tab-item" :class="{ 'is-active': route.path === '/categories' }">
+          <AppIcon name="grid" :size="21" :stroke="1.7" />
+          <span class="tab-label">分类</span>
+        </router-link>
+
+        <button type="button" class="tab-item" :class="{ 'is-active': showMobileSearch }" @click="toggleMobileSearch">
+          <AppIcon name="search" :size="21" :stroke="1.7" />
+          <span class="tab-label">搜索</span>
+        </button>
+
+        <router-link v-if="userStore.isLoggedIn" to="/about" class="tab-item" :class="{ 'is-active': route.path === '/about' }">
+          <img :src="userAvatar" class="tab-avatar" alt="" />
+          <span class="tab-label">关于我</span>
+        </router-link>
+        <router-link v-else to="/login" class="tab-item" :class="{ 'is-active': route.path === '/login' }">
+          <AppIcon name="user" :size="21" :stroke="1.7" />
+          <span class="tab-label">登录</span>
+        </router-link>
       </div>
     </nav>
 
     <!-- 移动端搜索弹窗 -->
-    <div v-if="showMobileSearch && isMobile" class="fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-20" @click="showMobileSearch = false">
-      <div class="bg-white rounded-lg p-4 w-11/12 max-w-md" @click.stop>
+    <div v-if="showMobileSearch && isMobile" class="mobile-search-layer" @click="showMobileSearch = false">
+      <div class="mobile-search-card" @click.stop>
         <SearchBox :full-width="true" :auto-focus="true" @select="closeMobileSearch" />
       </div>
     </div>
 
     <!-- 主内容区 -->
-    <main class="main-content" :class="{'pt-3': !isMobile, 'pb-10': isMobile}">
+    <main class="main-content" :class="{'pt-3': !isMobile}">
       <router-view />
     </main>
 
@@ -113,7 +105,7 @@
  */
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { HomeFilled, Folder, Grid, Search, User } from '@element-plus/icons-vue'
+import AppIcon from '../components/icons/AppIcon.vue'
 import SearchBox from '../components/SearchBox.vue'
 import NavMenu from '../components/NavMenu.vue'
 import UserActions from '../components/UserActions.vue'
@@ -126,8 +118,8 @@ const userStore = useUserStore()
 
 // 滚动状态
 const isScrolled = ref(false)
-// 移动端状态
-const isMobile = ref(window.innerWidth <= 745)
+// 移动端状态（断点统一 768px，与 Tailwind md 断点及全站 @media 一致）
+const isMobile = ref(window.innerWidth <= 768)
 // 移动端搜索弹窗状态
 const showMobileSearch = ref(false)
 // 移动端搜索弹窗中的搜索框是否显示
@@ -164,7 +156,7 @@ const closeMobileSearch = () => {
  * 处理窗口 resize 事件
  */
 const handleResize = () => {
-  isMobile.value = window.innerWidth <= 745
+  isMobile.value = window.innerWidth <= 768
 }
 
 // 组件挂载时添加事件监听
@@ -191,6 +183,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   transition: background-color 0.3s ease;
+  position: relative;
+  z-index: 1;
 }
 
 /* 头部导航样式 */
@@ -247,7 +241,97 @@ onUnmounted(() => {
 }
 
 .footer-text {
+  text-align: right;
   color: var(--text-tertiary);
   font-size: 0.875rem;
+}
+
+/* ---------- 移动端底部导航 ---------- */
+.mobile-tabbar {
+  background: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.tabbar-inner {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  padding: 6px 4px 7px;
+}
+
+.tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.16s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab-item.is-active {
+  color: var(--accent-color);
+}
+
+.tab-label {
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tab-avatar {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ---------- 移动端搜索弹层 ---------- */
+.mobile-search-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12px 12px 0;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.mobile-search-card {
+  width: 100%;
+  max-width: 32rem;
+  /* 卡片本身不裁剪，结果列表在自己的容器里滚动，白底始终包住结果 */
+  padding: 12px;
+  border-radius: var(--radius-card, 10px);
+  background: var(--card-bg);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+}
+
+/* 移动端：底栏是 fixed，给页面留出足够的下边距，footer 不再被压住 */
+@media (max-width: 768px) {
+  .main-layout {
+    /* 底栏实际高度 + 安全区，再留 12px 呼吸 */
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px);
+  }
+
+  .footer {
+    margin-bottom: 0;
+  }
+
+  .footer-text {
+    text-align: center;
+    padding-bottom: 0.25rem;
+  }
 }
 </style>

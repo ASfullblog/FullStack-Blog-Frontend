@@ -5,20 +5,20 @@
     <!-- 标题区域 -->
     <div class="section-header">
       <div class="title-wrapper">
-        <span class="title-icon">✦</span>
+        <AppIcon class="title-icon" name="sparkles" :size="18" :stroke="1.6" />
         <h3 class="section-title">摘抄语录</h3>
         <span class="title-decoration"></span>
       </div>
       <button class="refresh-btn" @click="refreshQuote" title="换一句">
-        <el-icon><Refresh /></el-icon>
+        <AppIcon name="refresh" :size="15" />
       </button>
     </div>
 
     <!-- 主语录展示 - 卡片式设计 -->
     <div class="quote-main-card" :key="currentQuote.id">
       <!-- 装饰引号 -->
-      <div class="quote-decoration quote-decoration-left">"</div>
-      <div class="quote-decoration quote-decoration-right">"</div>
+      <AppIcon class="quote-decoration quote-decoration-left" name="quote" :size="30" :stroke="1.4" />
+      <AppIcon class="quote-decoration quote-decoration-right" name="quote" :size="30" :stroke="1.4" />
 
       <!-- 中文内容 -->
       <div class="quote-content-cn">
@@ -34,7 +34,7 @@
       <div class="quote-author-section">
         <div class="author-divider">
           <span class="divider-line"></span>
-          <span class="divider-dot">◆</span>
+          <span class="divider-dot"></span>
           <span class="divider-line"></span>
         </div>
         <div class="author-info">
@@ -54,7 +54,7 @@
  * 功能：展示经典语录和名言，支持中英文双语显示、手动刷新
  */
 import { ref, computed, onMounted } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import AppIcon from './icons/AppIcon.vue'
 import { ElMessage } from 'element-plus'
 import {
   getQuotes,
@@ -168,8 +168,9 @@ onMounted(() => {
   right: -20%;
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, var(--accent-color) 0%, transparent 70%);
-  opacity: 0.05;
+  background: var(--accent-color);
+  opacity: 0.03;
+  filter: blur(80px);
   pointer-events: none;
 }
 
@@ -184,19 +185,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
   min-width: 0;
 }
 
 .title-icon {
-  font-size: 24px;
+  font-size: 20px;
   color: var(--accent-color);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
 }
 
 .section-title {
@@ -207,16 +201,17 @@ onMounted(() => {
 }
 
 .title-decoration {
-  width: 40px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-color), transparent);
-  border-radius: 2px;
+  width: 32px;
+  height: 2px;
+  background: var(--accent-color);
+  opacity: 0.35;
+  border-radius: 1px;
 }
 
 .refresh-btn {
-  width: 36px;
-  height: 36px;
-  border: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
   background: var(--bg-secondary);
   border-radius: 10px;
   cursor: pointer;
@@ -228,15 +223,19 @@ onMounted(() => {
 }
 
 .refresh-btn:hover {
-  background: var(--accent-color);
-  color: white;
-  transform: rotate(180deg);
+  color: var(--accent-color);
+  border-color: var(--border-strong);
+}
+
+.refresh-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
 }
 
 /* 主语录卡片 - 新设计 */
 .quote-main-card {
-  background: linear-gradient(145deg, var(--bg-secondary) 0%, var(--card-bg) 100%);
-  border-radius: 20px;
+  background: var(--card-bg);
+  border-radius: var(--radius-card, 10px);
   padding: 40px 32px;
   position: relative;
   margin-bottom: 24px;
@@ -244,24 +243,23 @@ onMounted(() => {
 }
 
 /* 装饰引号 */
+/* 引号：用统一的线性图标，大小克制，只作提示不作装饰 */
 .quote-decoration {
   position: absolute;
-  font-size: 120px;
-  font-family: Georgia, serif;
   color: var(--accent-color);
-  opacity: 0.1;
-  line-height: 1;
+  opacity: 0.18;
   pointer-events: none;
 }
 
 .quote-decoration-left {
-  top: 10px;
-  left: 20px;
+  top: 16px;
+  left: 18px;
 }
 
 .quote-decoration-right {
-  bottom: -20px;
-  right: 20px;
+  right: 18px;
+  bottom: 14px;
+  transform: rotate(180deg);
 }
 
 /* 中文内容 */
@@ -311,15 +309,18 @@ onMounted(() => {
 }
 
 .divider-line {
-  width: 60px;
+  width: 48px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  background: var(--border-color);
 }
 
+/* 分隔点：纯 CSS 小圆点，不用字符符号 */
 .divider-dot {
-  color: var(--accent-color);
-  font-size: 8px;
-  opacity: 0.6;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  opacity: 0.5;
 }
 
 .author-info {
@@ -384,7 +385,7 @@ onMounted(() => {
   height: 22px;
   border-radius: 6px;
   font-size: 11px;
-  margin-left: 10px;
+  margin-left: 20px;
   box-shadow: 1px 2px 2px #eee;
 }
 

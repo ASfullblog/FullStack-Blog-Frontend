@@ -12,7 +12,7 @@
         @click="isSearchFocused = true"
         @mouseenter="isSearchFocused = true"
         @mouseleave="handleSearchMouseLeave">
-      <el-icon class="search-icon"><Search /></el-icon>
+      <AppIcon class="search-icon" name="search" :size="16" :stroke="1.7" />
       <input
         ref="searchInputRef"
         v-model="searchQuery"
@@ -24,7 +24,9 @@
         @input="handleSearchInput"
         @keyup.enter="performSearch"
       />
-      <el-icon v-if="searchQuery" class="clear-icon" @click="clearSearch"><CircleClose /></el-icon>
+      <button v-if="searchQuery" type="button" class="clear-icon" aria-label="清空搜索" @click="clearSearch">
+        <AppIcon name="close" :size="14" :stroke="2" />
+      </button>
     </div>
     
     <!-- 搜索结果下拉框 -->
@@ -57,7 +59,7 @@
  */
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { Search, CircleClose } from '@element-plus/icons-vue'
+import AppIcon from './icons/AppIcon.vue'
 import { postApi } from '../api/post'
 import type { Post } from '../types'
 
@@ -222,22 +224,28 @@ const goToPost = (slug: string) => {
 .search-input-wrapper {
   display: flex;
   align-items: center;
-  background: #f5f5f5;
-  border-radius: 20px;
-  padding: 8px 12px;
-  transition: all 0.3s ease;
+  gap: 8px;
+  background: var(--bg-secondary, #f5f5f5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control, 8px);
+  padding: 7px 10px;
+  transition: background-color 0.16s ease, border-color 0.16s ease;
   cursor: pointer;
 }
 
 .search-container.search-expanded .search-input-wrapper {
-  color: #000;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--border-color, #e5e5e3);
+}
+
+.search-container.search-expanded .search-input-wrapper {
+  color: var(--text-color, #1b1b1a);
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #e5e5e3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .search-icon {
-  color: #999;
-  font-size: 16px;
+  color: var(--text-secondary, #8a8a85);
   flex-shrink: 0;
 }
 
@@ -246,10 +254,15 @@ const goToPost = (slug: string) => {
   border: none;
   background: transparent;
   outline: none;
-  padding: 0 8px;
+  padding: 0;
   font-size: 14px;
+  color: var(--text-color, #1b1b1a);
   width: 0;
-  transition: all 0.3s ease;
+  transition: width 0.2s ease;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary, #9a9a94);
 }
 
 .search-container.search-expanded .search-input {
@@ -261,36 +274,65 @@ const goToPost = (slug: string) => {
 }
 
 .clear-icon {
-  color: #999;
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary, #8a8a85);
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .clear-icon:hover {
-  color: #666;
+  color: var(--text-color, #1b1b1a);
+  background: var(--bg-secondary, #f1f1ee);
 }
 
-/* 搜索结果下拉框 */
+/* 搜索结果下拉框：整块一个白底容器，向下延伸，超高滚动 */
 .search-results {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   left: 0;
   right: 0;
-  margin-top: 8px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  max-height: 400px;
-  overflow-y: auto;
-  overflow: visible;
   z-index: 1000;
+  background: var(--card-bg, #fff);
+  border: 1px solid var(--border-color, #ececea);
+  border-radius: var(--radius-card, 10px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.04);
+  /* 让容器包住搜索框足宽（展开态宽度），避免窄输入框把下拉挤成一条 */
+  min-width: 100%;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 移动端弹层里铺满容器宽度，不溢出屏幕 */
+.search-container.search-full-width .search-results {
+  left: 0;
+  right: 0;
+}
+
+.search-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-results::-webkit-scrollbar-thumb {
+  background: var(--border-strong, #d4d4d0);
+  border-radius: 3px;
 }
 
 .search-results.no-results {
-  padding: 20px;
+  display: block;
+  padding: 20px 16px;
   text-align: center;
-  color: #999;
+  color: var(--text-secondary, #8a8a85);
+  font-size: 13px;
 }
 
 .search-result-item {
@@ -298,9 +340,8 @@ const goToPost = (slug: string) => {
   align-items: flex-start;
   padding: 12px 16px;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-  transition: all 0.2s ease;
-  position: relative;
+  border-bottom: 1px solid var(--border-color, #f0f0ef);
+  transition: background-color 0.14s ease;
   user-select: none;
 }
 
@@ -308,13 +349,9 @@ const goToPost = (slug: string) => {
   border-bottom: none;
 }
 
-.search-result-item:hover {
-  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-}
-
+.search-result-item:hover,
 .search-result-item:active {
-  background: linear-gradient(135deg, #667eea30 0%, #764ba230 100%);
-  transform: scale(0.98);
+  background: var(--bg-secondary, #f5f5f3);
 }
 
 .result-content {
@@ -323,19 +360,20 @@ const goToPost = (slug: string) => {
 }
 
 .result-title {
+  margin: 0 0 4px;
   font-size: 14px;
   font-weight: 600;
-  color: #333;
-  margin-bottom: 4px;
+  color: var(--text-color, #1b1b1a);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .result-excerpt {
+  margin: 0;
   font-size: 12px;
-  color: #666;
-  line-height: 1.4;
+  color: var(--text-secondary, #6b6b66);
+  line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

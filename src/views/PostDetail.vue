@@ -53,6 +53,42 @@
         <!-- 文章内容 -->
         <div class="post-content" v-html="renderedContent" ref="contentRef"></div>
 
+        <!-- 移动端/平板（< lg）信息卡：目录 + 作者，紧跟正文、评论之前，全宽 -->
+        <div class="pd-mobile-cards">
+          <!-- 目录（少于 2 个标题不值得做目录） -->
+          <section v-if="tocItems.length >= 2" class="pd-card pd-toc">
+            <h3 class="pd-card-title">文章目录</h3>
+            <ul class="toc-list">
+              <li
+                v-for="(item, index) in tocItems"
+                :key="index"
+                :class="['toc-item', `toc-level-${item.level}`]"
+              >
+                <a
+                  :href="`#${item.id}`"
+                  class="toc-link"
+                  @click.prevent="scrollToHeading(item.id)"
+                >
+                  {{ item.text }}
+                </a>
+              </li>
+            </ul>
+          </section>
+
+          <!-- 作者信息 -->
+          <section class="pd-card pd-author">
+            <h3 class="pd-card-title">作者信息</h3>
+            <div class="pd-author-row">
+              <img :src="resolveAvatar(post.author)" :alt="post.author.username" class="pd-author-avatar">
+              <div class="pd-author-meta">
+                <div class="pd-author-name">{{ post.author.username }}</div>
+                <div class="pd-author-role">作者</div>
+              </div>
+            </div>
+            <p class="pd-author-bio">专注于技术分享，希望通过文章帮助更多人学习和成长。</p>
+          </section>
+        </div>
+
         <!-- 评论区 -->
         <div class="comment-section">
           <h2 class="text-2xl font-bold mb-6">评论</h2>
@@ -127,10 +163,10 @@
         </div>
       </div>
 
-      <!-- 侧边栏 -->
-      <div class="lg:col-span-1">
+      <!-- 侧边栏（桌面端 >= lg 才显示；移动端目录/作者已在正文下方全宽渲染） -->
+      <aside class="lg:col-span-1 hidden lg:block pd-aside">
         <!-- 目录 -->
-        <div class="toc mb-6" v-if="tocItems.length > 0">
+        <div class="toc mb-6" v-if="tocItems.length >= 2">
           <h3 class="toc-title">文章目录</h3>
           <ul class="toc-list">
             <li
@@ -189,7 +225,7 @@
             暂无相关文章
           </div>
         </div>
-      </div>
+      </aside>
     </div>
 
     <!-- 文章不存在 -->
@@ -543,9 +579,7 @@ const fetchPost = async () => {
   } finally {
     loading.value = false
   }
-}
-
-// 获取评论列表
+}// 获取评论列表
 const fetchComments = async (postId: number, showNotification: boolean = false) => {
   try {
     const response = await postApi.getComments(postId)
@@ -565,14 +599,12 @@ const fetchComments = async (postId: number, showNotification: boolean = false) 
 
 // 实时评论轮询
 let commentsPollingTimer: NodeJS.Timeout | null = null
-let lastCommentCount = 0
 
 /**
  * 开始评论轮询
  */
 const startCommentsPolling = () => {
   if (commentsPollingTimer || !post.value) return
-
   // 立即获取一次
   fetchComments(post.value.id)
 

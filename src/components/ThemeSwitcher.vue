@@ -1,264 +1,297 @@
 <template>
-  <!-- 主题切换器组件 - 画板形式，hover时半围绕展开 -->
-  <div class="theme-palette-container" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-    <!-- 画板主体 - 始终显示 -->
-    <div class="palette-main" :class="{ 'expanded': isExpanded }">
-      <span class="palette-icon">🎨</span>
-    </div>
+  <!-- 主题切换器：右下角一枚克制的小按钮，点开是一张带色彩样本的清单 -->
+  <div ref="rootRef" class="theme-switch" :class="{ 'is-open': open }">
+    <!-- 收起态：显示当前主题 -->
+    <button
+      class="ts-trigger"
+      type="button"
+      :aria-expanded="open"
+      aria-haspopup="listbox"
+      :aria-label="`外观：${currentLabel}，点击切换`"
+      @click="toggle"
+    >
+      <AppIcon :name="currentIcon" :size="16" :stroke="1.7" />
+      <span class="ts-trigger-label">{{ currentLabel }}</span>
+    </button>
 
-    <!-- 主题选项 - 半围绕画板展开 -->
-    <div class="palette-options">
-      <button
-        v-for="(theme, index) in themeStore.availableThemes"
-        :key="theme.value"
-        class="palette-option"
-        :class="{
-          'active': themeStore.currentTheme === theme.value,
-          'locked': !theme.unlocked,
-          'show': isExpanded
-        }"
-        :style="getOptionStyle(index)"
-        @click="selectTheme(theme.value, theme.unlocked)"
-        :title="theme.label + (theme.unlocked ? '' : ' (登录解锁)')"
-      >
-        <span class="option-icon">{{ theme.icon }}</span>
-      </button>
-    </div>
-
+    <Transition name="ts-pop">
+      <div v-if="open" class="ts-panel" role="listbox" aria-label="选择主题">
+        <div class="ts-panel-title">外观</div>
+        <button
+          v-for="theme in themeStore.availableThemes"
+          :key="theme.value"
+          type="button"
+          class="ts-item"
+          :class="{ 'is-active': themeStore.currentTheme === theme.value }"
+          role="option"
+          :aria-selected="themeStore.currentTheme === theme.value"
+          @click="selectTheme(theme.value)"
+        >
+          <!-- 色样：用主题自己的三色代表这套风格，比图标更直观 -->
+          <span class="ts-swatch" :class="`sw-${theme.value}`" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </span>
+          <span class="ts-item-text">
+            <span class="ts-item-label">{{ theme.label }}</span>
+            <span class="ts-item-hint">{{ theme.hint }}</span>
+          </span>
+          <AppIcon
+            v-if="themeStore.currentTheme === theme.value"
+            class="ts-item-check"
+            name="check"
+            :size="14"
+            :stroke="2"
+          />
+          <AppIcon v-else class="ts-item-glyph" :name="theme.icon" :size="14" :stroke="1.7" />
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+/**
+ * 主题切换器
+ * - 收起时只占一颗按钮的位置，不抢版面；展开是一张清单（不再做放射状画板）
+ * - 色样直接映射四种主题的主色/纸色，用户不用点开就知道会长什么样
+ * - 天气主题额外显示所在城市与当前天气（来自 useThemeStore.weather）
+ */
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useThemeStore, type ThemeType } from '../stores/themeStore'
-import { ElMessage } from 'element-plus'
+import AppIcon from './icons/AppIcon.vue'
 
 const themeStore = useThemeStore()
+const open = ref(false)
+const rootRef = ref<HTMLElement | null>(null)
 
-// 展开状态
-const isExpanded = ref(false)
-let closeTimer: ReturnType<typeof setTimeout> | null = null
+const currentThemeMeta = computed(
+  () => themeStore.availableThemes.find((t) => t.value === themeStore.currentTheme) ?? themeStore.availableThemes[0]
+)
+const currentLabel = computed(() => currentThemeMeta.value?.label ?? '外观')
+const currentIcon = computed(() => currentThemeMeta.value?.icon ?? 'palette')
 
-const handleMouseEnter = () => {
-  if (closeTimer) {
-    clearTimeout(closeTimer)
-    closeTimer = null
-  }
-  isExpanded.value = true
+const toggle = () => {
+  open.value = !open.value
 }
 
-const handleMouseLeave = () => {
-  closeTimer = setTimeout(() => {
-    isExpanded.value = false
-  }, 800)
+const selectTheme = (theme: ThemeType) => {
+  themeStore.setTheme(theme)
+  // 选完即收，移动端点一下就走
+  open.value = false
 }
 
-// 计算半围绕展开的位置
-const getOptionStyle = (index: number) => {
-  const total = themeStore.availableThemes.length
-  const startAngle = -90
-  const endAngle = 90
-  const angle = startAngle + (index / (total - 1)) * (endAngle - startAngle)
-  const radius = 50
-
-  const rad = (angle * Math.PI) / 180
-  const x = -Math.abs(Math.cos(rad) * radius)
-  const y = Math.sin(rad) * radius
-
-  return {
-    '--x': `${x}px`,
-    '--y': `${y}px`,
-    '--delay': `${index * 0.05}s`
-  }
+// 点外部 / Esc 关闭
+const onDocClick = (e: MouseEvent) => {
+  if (!open.value) return
+  if (rootRef.value && !rootRef.value.contains(e.target as Node)) open.value = false
+}
+const onKey = (e: KeyboardEvent) => {
+  if (e.key === 'Escape') open.value = false
 }
 
-// 选择主题
-const selectTheme = async (theme: ThemeType, unlocked: boolean) => {
-  if (!unlocked) {
-    ElMessage.warning('请先登录以解锁此主题')
-    return
-  }
-
-  if (themeStore.currentTheme === theme) {
-    return
-  }
-
-  const success = themeStore.setTheme(theme)
-  if (success) {
-    ElMessage.success(`已切换到${themeStore.availableThemes.find(t => t.value === theme)?.label}`)
-  }
-}
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+  document.addEventListener('keydown', onKey)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+  document.removeEventListener('keydown', onKey)
+})
 </script>
 
 <style scoped>
-/* 画板容器 - 固定在右侧 */
-.theme-palette-container {
+.theme-switch {
   position: fixed;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1000;
-  width: 60px;
-  height: 60px;
-  will-change: transform;
+  right: 18px;
+  bottom: 18px;
+  z-index: 1200;
 }
 
-/* 画板主体 - 田园风格配色 */
-.palette-main {
+/* 触发按钮：中性描边小胶囊，跟四套主题都协调 */
+.ts-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px 0 10px;
+  border-radius: var(--radius-control, 8px);
+  border: 1px solid var(--border-color, #e5e5e3);
+  background: var(--card-bg, #fff);
+  color: var(--text-secondary, #555);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: color 0.16s ease, border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.ts-trigger:hover {
+  color: var(--text-color, #1b1b1a);
+  border-color: var(--border-strong, #d4d4d0);
+}
+
+.ts-trigger:focus-visible {
+  outline: 2px solid var(--accent-color, #2f5d8f);
+  outline-offset: 2px;
+}
+
+.ts-trigger-label {
+  max-width: 92px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 展开面板 */
+.ts-panel {
   position: absolute;
   right: 0;
-  top: 50%;
-  transform: translateY(-50%) translateZ(0);
-  border-radius: 50%;
-  width: 52px;
-  height: 52px;
-  background: linear-gradient(135deg, #FDE047 0%, #FACC15 30%, #A3E635 70%, #4ADE80 100%);
-  box-shadow:
-    0 4px 15px rgba(250, 204, 21, 0.4),
-    0 0 0 3px rgba(255, 255, 255, 0.3) inset,
-    0 2px 4px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
+  bottom: calc(100% + 8px);
+  width: 208px;
+  padding: 6px;
+  border-radius: var(--radius-card, 10px);
+  border: 1px solid var(--border-color, #e5e5e3);
+  background: var(--card-bg, #fff);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.ts-panel-title {
+  padding: 4px 8px 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary, #8a8a85);
+}
+
+.ts-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 10;
-  will-change: transform;
-}
-
-.palette-main:hover {
-  transform: translateY(-50%) translateZ(0) scale(1.1);
-  box-shadow:
-    0 6px 20px rgba(250, 204, 21, 0.5),
-    0 0 0 4px rgba(255, 255, 255, 0.4) inset;
-}
-
-.palette-main.expanded {
-  transform: translateY(-50%) translateZ(0) scale(0.95);
-}
-
-.palette-icon {
-  font-size: 28px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
-}
-
-/* 主题选项容器 */
-.palette-options {
-  position: absolute;
-  right: 26px;
-  top: 50%;
-  transform: translateY(-50%) translateZ(0);
-  width: 0;
-  height: 0;
-  will-change: contents;
-}
-
-/* 主题选项 - 半围绕画板展开 */
-.palette-option {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: none;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-color, #1b1b1a);
+  text-align: left;
   cursor: pointer;
+  transition: background-color 0.14s ease;
+}
+
+.ts-item:hover {
+  background: var(--bg-secondary, #f1f1ee);
+}
+
+.ts-item:focus-visible {
+  outline: 2px solid var(--accent-color, #2f5d8f);
+  outline-offset: -2px;
+}
+
+.ts-item.is-active {
+  background: var(--accent-soft, rgba(47, 93, 143, 0.08));
+}
+
+/* 色样：三个小方块代表 底色/纸色/强调色 */
+.ts-swatch {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 1fr);
+  flex: none;
+  width: 30px;
+  height: 20px;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border-color, #e5e5e3);
+}
+
+.ts-swatch i {
+  display: block;
+}
+
+.sw-light i:nth-child(1) { background: #f7f7f5; }
+.sw-light i:nth-child(2) { background: #ffffff; }
+.sw-light i:nth-child(3) { background: #2f5d8f; }
+
+.sw-dark i:nth-child(1) { background: #15171a; }
+.sw-dark i:nth-child(2) { background: #1d2024; }
+.sw-dark i:nth-child(3) { background: #7ea7c9; }
+
+.sw-dusk i:nth-child(1) { background: #1a1816; }
+.sw-dusk i:nth-child(2) { background: #232019; }
+.sw-dusk i:nth-child(3) { background: #c47a4e; }
+
+.sw-weather i:nth-child(1) { background: #cfe0ee; }
+.sw-weather i:nth-child(2) { background: #f6f8fa; }
+.sw-weather i:nth-child(3) { background: #4a7ba7; }
+
+.ts-item-text {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ts-item-label {
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ts-item-hint {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-secondary, #8a8a85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ts-item-glyph,
+.ts-item-check {
+  flex: none;
+  color: var(--text-secondary, #8a8a85);
+}
+
+.ts-item-check {
+  color: var(--accent-color, #2f5d8f);
+}
+
+/* 弹出动画：短、克制，不做弹簧 */
+.ts-pop-enter-active,
+.ts-pop-leave-active {
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  transform-origin: bottom right;
+}
+
+.ts-pop-enter-from,
+.ts-pop-leave-to {
   opacity: 0;
-  transform: translate(0, -50%) scale(0) translateZ(0);
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  transition-delay: var(--delay);
-  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCD34D 100%);
-  box-shadow:
-    0 3px 10px rgba(251, 191, 36, 0.3),
-    0 0 0 2px rgba(255, 255, 255, 0.5) inset;
-  will-change: transform, opacity;
+  transform: translateY(4px) scale(0.98);
 }
 
-.palette-option.show {
-  opacity: 1;
-  transform: translate(var(--x), calc(var(--y) - 50%)) scale(1) translateZ(0);
+@media (prefers-reduced-motion: reduce) {
+  .ts-pop-enter-active,
+  .ts-pop-leave-active {
+    transition: none;
+  }
 }
 
-.palette-option:hover:not(:disabled) {
-  transform: translate(var(--x), calc(var(--y) - 50%)) scale(1.15) translateZ(0);
-  box-shadow:
-    0 5px 15px rgba(251, 191, 36, 0.5),
-    0 0 0 3px rgba(255, 255, 255, 0.6) inset;
-  z-index: 20;
-}
-
-.palette-option.active {
-  background: linear-gradient(135deg, #86EFAC 0%, #4ADE80 50%, #22C55E 100%);
-  box-shadow:
-    0 3px 12px rgba(74, 222, 128, 0.4),
-    0 0 0 2px rgba(255, 255, 255, 0.6) inset;
-}
-
-.palette-option.locked {
-  opacity: 0.4;
-  cursor: not-allowed;
-  filter: grayscale(0.5);
-}
-
-.option-icon {
-  font-size: 20px;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
-}
-
-/* 响应式 - 移动端简约样式 */
+/* 移动端：贴着底部导航上方，避开底栏 */
 @media (max-width: 768px) {
-  .theme-palette-container {
+  .theme-switch {
     right: 12px;
-    top: auto;
-    bottom: 120px;
-    transform: none;
-    width: 40px;
-    height: 40px;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px);
   }
 
-  .palette-main {
-    width: 40px;
-    height: 40px;
-    background: var(--card-bg);
-    box-shadow: 0 2px 8px var(--shadow-color);
-    border: 1px solid var(--border-color);
-  }
-
-  .palette-main:hover {
-    transform: translateY(-50%) scale(1.05);
-    box-shadow: 0 2px 8px var(--shadow-color);
-  }
-
-  .palette-icon {
-    font-size: 20px;
-  }
-
-  .palette-options {
-    right: 20px;
-  }
-
-  .palette-option {
-    width: 32px;
+  .ts-trigger {
     height: 32px;
-    background: var(--card-bg);
-    box-shadow: 0 2px 6px var(--shadow-color);
-    border: 1px solid var(--border-color);
+    padding: 0 10px;
+    font-size: 12px;
   }
 
-  .palette-option:hover:not(:disabled) {
-    box-shadow: 0 2px 6px var(--shadow-color);
-  }
-
-  .palette-option.active {
-    background: var(--bg-secondary);
-    box-shadow: 0 2px 6px var(--shadow-color);
-  }
-
-  .option-icon {
-    font-size: 16px;
+  .ts-trigger-label {
+    max-width: 72px;
   }
 }
 </style>

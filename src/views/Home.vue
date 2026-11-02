@@ -4,48 +4,12 @@
 
     <!-- 文章列表 -->
     <div class="posts-grid">
-      <div v-for="post in posts" :key="post.id" class="post-card" @click="goTitile(post.slug)">
-        <!-- 文章封面 -->
-        <div class="post-cover">
-          <img :src="getCoverImage(post.coverImage)" :alt="post.title">
-        </div>
-
-        <!-- 文章内容 -->
-        <div class="post-content">
-          <!-- 文章分类 -->
-          <div class="post-category">
-            <span>{{ post.category.name }}</span>
-          </div>
-
-          <!-- 文章标题 -->
-          <h2 class="post-title">
-            <p>{{ post.title }}</p>
-          </h2>
-
-          <!-- 文章摘要 -->
-          <p class="post-excerpt">{{ post.excerpt }}</p>
-
-          <!-- 文章标签 -->
-          <div class="post-tags">
-            <span v-for="tag in post.tags" :key="tag.id" class="tag">{{ tag.name }}</span>
-          </div>
-
-          <!-- 文章信息 - 固定在卡片底部 -->
-          <div class="post-meta">
-            <div class="post-meta-content">
-              <div class="post-author">
-                <img :src="resolveAvatar(post.author)" :alt="post.author.username">
-                <span>{{ post.author.username }}</span>
-              </div>
-              <div class="post-stats">
-                <span>{{ formatDate(post.createdAt) }}</span>
-                <span class="separator">•</span>
-                <span>{{ post.viewCount }} 阅读</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PostCard
+        v-for="post in posts"
+        :key="post.id"
+        :post="post"
+        @open="goTitile"
+      />
     </div>
 
     <!-- 加载状态 -->
@@ -95,14 +59,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { postApi } from '../api/post'
-import { resolveAvatar } from '../utils/avatar'
+import PostCard from '../components/PostCard.vue'
 import type { Post } from '../types'
 
 // 路由实例
 const router = useRouter()
-
-// 默认封面图片
-const DEFAULT_COVER_IMAGE = 'https://picsum.photos/1200/600?random=1'
 
 // 响应式数据
 const posts = ref<Post[]>([])
@@ -110,11 +71,6 @@ const total = ref(0)
 const page = ref(1)
 const limit = ref(10)
 const loading = ref(false)
-
-// 获取封面图片
-const getCoverImage = (coverImage?: string): string => {
-  return coverImage || DEFAULT_COVER_IMAGE
-}
 
 // 计算总页数
 const totalPages = computed(() => {
@@ -183,13 +139,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 页面标题 */
+/* 页面标题：左对齐的小标题，比居中大字更像“编辑过的页面” */
 .page-title {
-  font-size: 1.875rem;
-  font-weight: 700;
-  margin-bottom: 2rem;
-  text-align: center;
-  color: var(--text-primary);
+  margin: 0 0 1.25rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: left;
+  color: var(--text-color, var(--text-primary));
 }
 
 /* 文章网格 */
@@ -199,175 +158,17 @@ onMounted(() => {
   gap: 1.5rem;
 }
 
-@media (min-width: 768px) {
+/* 卡片式列表：手机单列，平板两列，宽屏三列 */
+@media (min-width: 640px) {
   .posts-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* 文章卡片 */
-.post-card {
-  background: var(--card-bg);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px var(--shadow-color);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-}
-
-.post-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px var(--shadow-color);
-}
-
-/* 文章封面 */
-.post-cover {
-  height: 12rem;
-  overflow: hidden;
-  position: relative;
-}
-
-.post-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.post-card:hover .post-cover img {
-  transform: scale(1.1);
-}
-
-/* 文章内容 */
-.post-content {
-  padding: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-/* 文章分类 */
-.post-category {
-  margin-bottom: 0.5rem;
-}
-
-.post-category span {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-}
-
-/* 文章标题 - 记号笔效果 */
-.post-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  position: relative;
-  display: block;
-  /* 文字溢出处理 - 最多显示2行 */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  line-height: 1.4;
-  max-height: 2.8em;
-}
-
-.post-title p {
-  color: var(--text-primary);
-  position: relative;
-  display: inline;
-}
-
-/* 记号笔下划线效果 */
-.post-title p::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  left: 0;
-  width: 100%;
-  height: 6px;
-  background: linear-gradient(135deg, var(--accent-color), var(--accent-secondary));
-  opacity: 0;
-  z-index: -1;
-  transform: rotate(-1deg) scaleX(0);
-  transform-origin: left;
-  transition: all 0.3s ease;
-  border-radius: 2px;
-}
-
-/* 卡片hover时显示记号笔效果 */
-.post-card:hover .post-title p::after {
-  opacity: 0.6;
-  transform: rotate(-1deg) scaleX(1);
-}
-
-/* 文章摘要 - 文字溢出处理 */
-.post-excerpt {
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
-  /* 最多显示3行 */
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.5;
-  max-height: 4.5em;
-}
-
-/* 文章标签 */
-.post-tags {
-  display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-
-.tag {
-  display: inline-block;
-  padding: 2px 8px;
-  background: var(--bg-tertiary);
-  border-radius: 12px;
-  font-size: 12px;
-  margin-right: 8px;
-  margin-bottom: 8px;
-  color: var(--text-secondary);
-}
-
-/* 文章信息 */
-.post-meta {
-  margin-top: auto;
-  padding-bottom: 5px;
-}
-
-.post-meta-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-}
-
-.post-author {
-  display: flex;
-  align-items: center;
-}
-
-.post-author img {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-}
-
-.post-stats {
-  display: flex;
-  align-items: center;
-}
-
-.separator {
-  margin: 0 0.5rem;
+@media (min-width: 1100px) {
+  .posts-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 /* 加载状态 */
@@ -412,49 +213,61 @@ onMounted(() => {
 }
 
 /* 分页 */
+/* 分页：一组连在一起的方按钮，不做阴影堆叠 */
 .pagination {
-  margin-top: 2.5rem;
+  margin-top: 2rem;
   display: flex;
   justify-content: center;
 }
 
 .pagination-nav {
   display: inline-flex;
-  border-radius: 0.375rem;
-  box-shadow: 0 1px 3px var(--shadow-color);
+  border-radius: var(--radius-control, 8px);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
 }
 
 .pagination-btn {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-color);
+  min-width: 38px;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-right: 1px solid var(--border-color);
   background: var(--card-bg);
   color: var(--text-secondary);
+  font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.14s ease, color 0.14s ease;
+}
+
+.pagination-btn:last-child {
+  border-right: 0;
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: var(--hover-bg);
+  background: var(--bg-secondary);
+  color: var(--text-color, var(--text-primary));
 }
 
 .pagination-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
-.pagination-btn-first {
-  border-radius: 0.375rem 0 0 0.375rem;
-  border-right: none;
-}
-
-.pagination-btn-last {
-  border-radius: 0 0.375rem 0.375rem 0;
-  border-left: none;
-}
-
 .pagination-btn-active {
-  background: var(--bg-tertiary);
-  color: var(--accent-color);
-  font-weight: 500;
+  background: var(--accent-color);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+.pagination-btn-active:hover:not(:disabled) {
+  background: var(--accent-color);
+  color: var(--accent-contrast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pagination-btn {
+    transition: none;
+  }
 }
 </style>

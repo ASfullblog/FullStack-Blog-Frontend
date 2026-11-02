@@ -451,7 +451,7 @@ h1::after, h2::after, h3::after {
 }
 
 /* 响应式设计 */
-@media (max-width: 745px) {
+@media (max-width: 768px) {
   .container {
     @apply px-4 py-6;
   }

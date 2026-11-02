@@ -293,7 +293,7 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" />
-      <el-table-column type="index" label="#" width="60" align="center" :index="indexMethod" />
+      <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
       <el-table-column prop="title" label="标题" min-width="300">
         <template #default="{ row }">
           <div class="post-title">
@@ -350,8 +350,6 @@
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         :total="pagination.total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
       />
     </div>
 
@@ -366,7 +364,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus'
 import { MdEditor } from 'md-editor-v3'
@@ -900,17 +898,11 @@ const resetSearch = () => {
   fetchPosts()
 }
 
-// 处理分页大小变化
-const handleSizeChange = (size: number) => {
-  pagination.pageSize = size
-  fetchPosts()
-}
-
-// 处理页码变化
-const handleCurrentChange = (page: number) => {
-  pagination.currentPage = page
-  fetchPosts()
-}
+// 分页变化：v-model 已更新，watch 触发一次请求（避免 @current-change 与 v-model 双重触发）
+watch(
+  () => [pagination.currentPage, pagination.pageSize],
+  () => fetchPosts()
+)
 
 // ===== 批量操作 =====
 const tableRef = ref()

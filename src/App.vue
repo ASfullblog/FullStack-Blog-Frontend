@@ -1,12 +1,12 @@
 <template>
   <!-- 应用根组件 - 仅作为路由出口 -->
+  <!-- 天气实景背景：仅在「天气」主题下挂载 -->
+  <WeatherBackground v-if="isWeatherTheme" />
   <router-view />
   <!-- 全局工具栏组件 -->
   <Toolbar />
   <!-- 主题切换器 - 固定在页面右下角，登录/注册页面不显示 -->
   <ThemeSwitcher v-if="!isAuthPage" />
-  <!-- 快乐主题笑脸拖尾效果 -->
-  <HappyTrail />
   <!-- 全局气泡通知组件 -->
   <ToastNotification ref="toastRef" />
 </template>
@@ -23,14 +23,13 @@ import { onMounted, computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Toolbar from './components/Toolbar.vue'
 import ThemeSwitcher from './components/ThemeSwitcher.vue'
-import HappyTrail from './components/HappyTrail.vue'
+import WeatherBackground from './components/weather/WeatherBackground.vue'
 import ToastNotification from './components/ToastNotification.vue'
 import { useThemeStore } from './stores/themeStore'
-import { useUserStore } from './stores/userStore'
+import { startWeatherService } from './services/weather'
 import { setToastRef } from './utils/toast'
 
 const themeStore = useThemeStore()
-const userStore = useUserStore()
 const route = useRoute()
 const toastRef = ref<InstanceType<typeof ToastNotification> | null>(null)
 
@@ -42,9 +41,14 @@ const isAuthPage = computed(() => {
   return route.path === '/login' || route.path === '/register'
 })
 
-// 初始化主题
+/** 天气主题才挂载背景画布，其他主题零成本 */
+const isWeatherTheme = computed(() => themeStore.currentTheme === 'weather')
+
+// 主题立刻生效（避免闪白），天气快照同步给一份，切到天气主题时立即可见
+themeStore.initTheme()
+startWeatherService()
+
 onMounted(() => {
-  themeStore.initTheme(userStore.isLoggedIn)
   // 设置全局 toast 引用
   if (toastRef.value) {
     setToastRef(toastRef.value)

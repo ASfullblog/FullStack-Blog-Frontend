@@ -108,3 +108,6 @@ coverage/
 *.local
 
 .vercel
+
+.shots/
+src/views/_pd_toc_patch.mjs

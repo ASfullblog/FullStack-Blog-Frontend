@@ -39,7 +39,7 @@
     <!-- 评论列表 -->
     <el-table :data="paginatedComments" style="width: 100%" border v-loading="loading" element-loading-text="加载中...">
       <el-table-column type="selection" width="55" />
-      <el-table-column type="index" label="#" width="60" align="center" :index="indexMethod" />
+      <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
       <el-table-column label="用户信息" width="150">
         <template #default="{ row }">
           <div class="user-cell">
@@ -108,8 +108,6 @@
         :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next, jumper"
         :total="filteredComments.length"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
       />
     </div>
   </div>
@@ -347,17 +345,6 @@ const viewPost = (slug: string) => {
   if (slug) {
     window.open(`/post/${slug}`, '_blank')
   }
-}
-
-// 分页大小变化
-const handleSizeChange = (val: number) => {
-  pagination.value.pageSize = val
-  pagination.value.currentPage = 1
-}
-
-// 页码变化
-const handleCurrentChange = (val: number) => {
-  pagination.value.currentPage = val
 }
 
 // 页面挂载

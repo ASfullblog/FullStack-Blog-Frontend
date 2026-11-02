@@ -14,14 +14,14 @@
       class="admin-link"
       :class="{'text-xs': isMobile}"
     >
-      <el-icon :size="isMobile ? 16 : 18"><Setting /></el-icon>
+      <AppIcon :name="'settings'" :size="isMobile ? 15 : 16" :stroke="1.7" />
       <span v-if="!isMobile">后台</span>
     </router-link>
 
     <!-- 游客状态 -->
     <router-link v-if="!userStore.isLoggedIn" to="/login" class="guest-link">
       <span v-if="!isMobile">登录</span>
-      <el-icon v-else :size="16"><User /></el-icon>
+      <AppIcon v-else name="user" :size="16" :stroke="1.7" />
     </router-link>
 
     <!-- 用户信息（已登录） -->
@@ -55,11 +55,10 @@
  * 功能：显示登录/头像、后台管理入口、用户菜单
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import AppIcon from './icons/AppIcon.vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, User } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/userStore'
-import { useThemeStore } from '../stores/themeStore'
 import { resolveAvatar } from '../utils/avatar'
 import NotificationBell from './NotificationBell.vue'
 
@@ -70,7 +69,6 @@ const props = defineProps<{
 
 const isMobile = props.isMobile || false
 const userStore = useUserStore()
-const themeStore = useThemeStore()
 const router = useRouter()
 
 // 下拉菜单状态
@@ -123,8 +121,6 @@ const userAvatar = computed(() => resolveAvatar(userStore.user))
  */
 const handleLogout = () => {
   userStore.logout()
-  // 更新主题状态（锁定个性情感模式）
-  themeStore.setLoginStatus(false)
   ElMessage.success('退出登录成功')
   router.push('/')
   showUserMenu.value = false
@@ -133,44 +129,46 @@ const handleLogout = () => {
 
 <style scoped>
 /* 后台管理链接样式 */
+/* 后台入口：描边按钮，不用渐变 */
 .admin-link {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: var(--radius-control, 8px);
+  border: 1px solid var(--border-color, #e5e5e3);
+  background: var(--bg-secondary, #f1f1ee);
+  color: var(--text-secondary, #5c5c58);
   font-size: 12px;
+  line-height: 1;
+  transition: color 0.16s ease, border-color 0.16s ease;
 }
 
 .admin-link:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  color: white;
+  color: var(--text-color, #1b1b1a);
+  border-color: var(--border-strong, #cfcfc8);
 }
 
-/* 游客链接样式 */
+/* 游客链接：实心主色按钮，文字用强调色反差色保证对比度 */
 .guest-link {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  font-weight: 500;
-  font-size: 12px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-control, 8px);
+  background: var(--accent-color, #2f5d8f);
+  color: var(--accent-contrast, #fff);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  transition: filter 0.16s ease;
 }
 
 .guest-link:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-  color: white;
+  color: var(--accent-contrast, #fff);
+  filter: brightness(1.08);
 }
 
 /* 用户头像容器 */
@@ -231,7 +229,7 @@ const handleLogout = () => {
 }
 
 /* 移动端样式 */
-@media (max-width: 745px) {
+@media (max-width: 768px) {
   .admin-link,
   .guest-link {
     padding: 4px 8px;
