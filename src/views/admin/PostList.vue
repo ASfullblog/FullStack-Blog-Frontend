@@ -21,9 +21,13 @@
           <el-input v-model="form.title" placeholder="请输入文章标题" maxlength="200" show-word-limit />
         </el-form-item>
         
-        <!-- 文章slug -->
+        <!-- 文章slug：后端自动生成（分类slug-序号），不可手动填写 -->
         <el-form-item label="Slug" prop="slug">
-          <el-input v-model="form.slug" placeholder="请输入文章slug（可选，默认会根据标题生成）" />
+          <el-input
+            v-model="form.slug"
+            disabled
+            :placeholder="isEdit ? 'slug 由系统生成，不可修改' : '保存后自动生成（分类slug-序号），无需填写'"
+          />
         </el-form-item>
         
         <!-- 文章分类 -->
@@ -852,12 +856,17 @@ const handleSubmit = async () => {
     if (valid) {
       loading.value = true
       try {
+        // slug 统一交给后端生成：新建从不提交；编辑时保留原 slug 回传（后端无变化即不动）
+        const originalSlug = isEdit.value
+          ? (posts.value.find(p => p.id === currentPostId.value)?.slug || '')
+          : ''
+        const submittableSlug = isEdit.value ? (originalSlug || undefined) : undefined
         if (isEdit.value && currentPostId.value) {
           // 更新文章
           const updateData = {
             id: currentPostId.value,
             title: form.title,
-            slug: form.slug,
+            slug: submittableSlug,
             content: form.content,
             excerpt: form.excerpt,
             coverImage: form.coverImage,
@@ -868,10 +877,9 @@ const handleSubmit = async () => {
           await postApi.updatePost(updateData)
           ElMessage.success('文章更新成功')
         } else {
-          // 创建文章
+          // 创建文章（slug 留空，由后端按「分类slug-序号」生成）
           const createData = {
             title: form.title,
-            slug: form.slug,
             content: form.content,
             excerpt: form.excerpt,
             coverImage: form.coverImage,
@@ -1146,6 +1154,9 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
 
   .post-form :deep(.md-editor-input-wrapper) {
     width: 100%;
+    /* display:block 后父级不再靠 flex 拉伸子项，必须显式给满高度，
+       否则内部 CodeMirror（.cm-editor height:100%）塌成一行 */
+    height: 100%;
     border-right: none;
   }
 
