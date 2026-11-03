@@ -187,7 +187,6 @@ const goToFrontend = () => {
 const handleLogout = () => {
   showUserMenu.value = false
   userStore.logout()
-  themeStore.setLoginStatus(false)
   router.push('/')
 }
 
@@ -575,11 +574,12 @@ onBeforeUnmount(() => {
     width: 260px;
     max-width: 82vw;
     transform: translateX(-100%);
-    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.28);
+    box-shadow: none;
   }
 
   .sidebar.is-open {
     transform: translateX(0);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.06);
   }
 
   .main-header {

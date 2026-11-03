@@ -3,6 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
+# 本地构建临时目录（esbuild 在系统 TEMP 下清理失败时用）
+.tmpbuild/
+
 # Production builds
 dist/
 dist-ssr/

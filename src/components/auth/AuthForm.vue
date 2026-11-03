@@ -283,6 +283,36 @@
         </div>
       </div>
     </div>
+
+    <!-- 忘记密码：用户名 + 注册邮箱校验后直接改密码（不走邮件/短信） -->
+  <el-dialog
+    v-model="resetVisible"
+    title="重置密码"
+    width="360px"
+    align-center
+    class="reset-dialog"
+    :close-on-click-modal="!resetLoading"
+  >
+    <p class="reset-tip">用注册时的用户名和邮箱验证身份，验证通过后即可设置新密码。</p>
+    <el-form label-position="top" class="reset-form" @submit.prevent>
+      <el-form-item label="用户名">
+        <el-input v-model="resetForm.username" placeholder="请输入用户名" autocomplete="username" />
+      </el-form-item>
+      <el-form-item label="注册邮箱">
+        <el-input v-model="resetForm.email" placeholder="请输入注册时填写的邮箱" autocomplete="email" />
+      </el-form-item>
+      <el-form-item label="新密码">
+        <el-input v-model="resetForm.password" type="password" show-password placeholder="至少 6 位" autocomplete="new-password" />
+      </el-form-item>
+      <el-form-item label="确认新密码">
+        <el-input v-model="resetForm.confirm" type="password" show-password placeholder="再输入一次" autocomplete="new-password" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button :disabled="resetLoading" @click="resetVisible = false">取消</el-button>
+      <el-button type="primary" :loading="resetLoading" @click="submitReset">确认重置</el-button>
+    </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -298,7 +328,6 @@ import { User, Lock, Message, View, Hide, ArrowRight, Close, House } from '@elem
 import { authApi } from '../../api/auth'
 import { getUserCount } from '../../api/user'
 import { useUserStore } from '../../stores/userStore'
-import { useThemeStore } from '../../stores/themeStore'
 import { clearAuthRedirectFlag } from '../../utils/auth'
 
 // ===== 响应式数据 =====
@@ -347,7 +376,6 @@ const handleTouchEnd = () => {
 
 // ===== Store 和路由 =====
 const userStore = useUserStore()
-const themeStore = useThemeStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -445,8 +473,6 @@ const handleLogin = async () => {
     const response = await authApi.login(loginForm.username, loginForm.password)
     if (response.code === 200) {
       userStore.login(response.data.user, response.data.token, loginForm.remember)
-      // 更新主题登录状态，解锁"个性情感"模式
-      themeStore.setLoginStatus(true)
       ElMessage.success('登录成功')
       const redirect = route.query.redirect as string
       if (redirect) {
@@ -465,8 +491,52 @@ const handleLogin = async () => {
 /**
  * 显示联系管理员提示
  */
+/**
+ * 忘记密码：打开重置密码弹层（用户名 + 注册邮箱校验，不发邮件/短信）
+ */
+const resetVisible = ref(false)
+const resetLoading = ref(false)
+const resetForm = reactive({
+  username: '',
+  email: '',
+  password: '',
+  confirm: ''
+})
+
 const showContactAdmin = () => {
-  ElMessage.info('请联系管理员重置密码')
+  resetForm.username = loginForm.username || ''
+  resetForm.email = ''
+  resetForm.password = ''
+  resetForm.confirm = ''
+  resetVisible.value = true
+}
+
+const submitReset = async () => {
+  if (!resetForm.username.trim() || !resetForm.email.trim()) {
+    ElMessage.warning('请填写用户名和注册邮箱')
+    return
+  }
+  if (resetForm.password.length < 6) {
+    ElMessage.warning('新密码至少 6 位')
+    return
+  }
+  if (resetForm.password !== resetForm.confirm) {
+    ElMessage.warning('两次输入的新密码不一致')
+    return
+  }
+
+  resetLoading.value = true
+  try {
+    await authApi.resetPassword(resetForm.username.trim(), resetForm.email.trim(), resetForm.password)
+    ElMessage.success('密码已重置，请用新密码登录')
+    resetVisible.value = false
+    loginForm.username = resetForm.username.trim()
+    loginForm.password = ''
+  } catch (error: any) {
+    ElMessage.error(error.message || '重置失败')
+  } finally {
+    resetLoading.value = false
+  }
 }
 
 /**
@@ -513,6 +583,16 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.reset-tip {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary, #6b6b66);
+}
+
+.reset-form {
+  --el-form-item-label-font-size: 13px;
+}
 /* ===== 页面容器 ===== */
 .auth-container {
   min-height: 100vh;

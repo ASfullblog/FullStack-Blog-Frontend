@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>登录 / 注册 · 改版方案</title>
+<style>
+  :root{
+    /* 与站点「纸白」主题同一套 token */
+    --paper:#f7f7f5;
+    --surface:#ffffff;
+    --surface-2:#fafbfc;
+    --ink:#1b1b1a;
+    --ink-2:#5c5c58;
+    --ink-3:#6b6b66;
+    --line:#e3e3de;
+    --line-strong:#cfcfc8;
+    --accent:#2f5d8f;
+    --accent-soft:rgba(47,93,143,.08);
+    --radius-card:12px;
+    --radius-control:8px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    overflow-x:hidden;
+    background:#efefec;
+    font-family:var(--font);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    padding:32px 24px 64px;
+  }
+  h1,h2,h3,p{margin:0;}
+  /* 桌面稿是固定 1440 画布：窄屏下整体等比缩放，而不是被压变形 */
+  .scaler{position:relative;width:100%;overflow:hidden;}
+  .scaler > .zoom{transform-origin:top left;width:1440px;}
+  .zoom * { cursor: default; }
+  .scaler::after{content:"";display:block;}
+  .doc-head{max-width:1180px;margin:0 auto 28px;}
+  .doc-head .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px;}
+  .doc-head h1{font-size:26px;font-weight:650;letter-spacing:-.01em;}
+  .doc-head .sub{margin-top:8px;font-size:14px;line-height:1.7;color:var(--ink-2);max-width:760px;}
+
+  .stage{max-width:1180px;margin:0 auto 40px;}
+  .stage-label{
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin:0 0 12px;
+    font-size:13px;color:var(--ink-3);
+  }
+  .stage-label b{white-space:nowrap;}
+  .stage-label b{font-size:14px;font-weight:600;color:var(--ink);letter-spacing:0;}
+  .stage-label span{font-size:12px;}
+
+  .frame{
+    border:1px solid var(--line-strong);
+    border-radius:14px;
+    overflow:hidden;
+    background:#fff;
+  }
+
+  /* ---------- 桌面 1440x860 ---------- */
+  .desktop{
+    width:100%;
+    height:0;
+    padding-bottom:59.72%; /* 860/1440 */
+    position:relative;
+    background:var(--paper);
+  }
+  .desktop > .inner{
+    position:absolute;inset:0;
+    display:grid;
+    grid-template-columns:minmax(320px,38%) 1fr;
+  }
+
+  /* 左：安静的说明区，不做插画 */
+  .aside{
+    position:relative;
+    padding:48px 44px;
+    display:flex;flex-direction:column;
+    border-right:1px solid var(--line);
+    background:var(--surface);
+  }
+  .aside .mark{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:14px;font-weight:600;letter-spacing:.01em;
+  }
+  .aside .mark .dot{width:7px;height:7px;border-radius:2px;background:var(--accent);}
+  .aside .lede{margin-top:auto;}
+  .aside .lede h2{
+    font-size:30px;line-height:1.35;font-weight:600;letter-spacing:-.02em;
+  }
+  .aside .lede p{
+    margin-top:14px;font-size:14px;line-height:1.85;color:var(--ink-2);max-width:300px;
+  }
+  .aside .meta{
+    margin-top:auto;padding-top:28px;
+    display:flex;align-items:center;gap:10px;
+    font-size:13px;color:var(--ink-3);
+    border-top:1px solid var(--line);
+  }
+  .aside .meta strong{color:var(--ink-2);font-weight:600;}
+
+  /* 右：表单 */
+  .panel{
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+    padding:40px;
+    background:var(--paper);
+  }
+  .back-home{
+    position:absolute;top:24px;right:28px;
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:13px;color:var(--ink-2);
+    border:1px solid var(--line);border-radius:999px;
+    padding:6px 12px;background:var(--surface);
+    text-decoration:none;
+  }
+  .back-home:hover{border-color:var(--line-strong);color:var(--ink);}
+
+  .card{
+    width:100%;max-width:372px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius-card);
+    padding:30px 30px 26px;
+  }
+  .card h3{font-size:19px;font-weight:600;letter-spacing:-.01em;}
+  .card .hint{margin-top:6px;font-size:13px;color:var(--ink-3);}
+
+  .tabs{
+    position:relative;display:grid;grid-template-columns:1fr 1fr;
+    margin:22px 0 22px;
+    background:var(--surface-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius-control);
+    padding:3px;
+  }
+  .tabs .slider{
+    position:absolute;top:3px;left:3px;
+    width:calc(50% - 3px);height:calc(100% - 6px);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:6px;
+    box-shadow:0 1px 2px rgba(24,24,22,.06);
+  }
+  .tabs button{
+    position:relative;z-index:1;
+    border:0;background:none;padding:8px 0;
+    font-family:inherit;font-size:13px;color:var(--ink-3);cursor:pointer;
+  }
+  .tabs button.active{color:var(--ink);font-weight:600;}
+
+  .field{position:relative;margin-bottom:16px;}
+  .field input{
+    width:100%;height:44px;
+    padding:0 14px;
+    font-family:inherit;font-size:14px;color:var(--ink);
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius-control);
+    outline:none;
+    transition:border-color .18s ease, box-shadow .18s ease;
+  }
+  .field input::placeholder{color:var(--ink-3);}
+  .field input:focus{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  /* 关键：label 不再压在边框上，改为输入框上方的普通标签 */
+  .field .label{
+    display:block;font-size:13px;color:var(--ink-2);
+    margin-bottom:6px;letter-spacing:.01em;
+  }
+  .field .inline-link{
+    position:absolute;right:0;top:-6px;
+    display:inline-flex;align-items:center;
+    min-height:28px;padding:0 4px;
+    font-size:13px;color:var(--accent);text-decoration:none;
+  }
+  .row-between{display:flex;align-items:center;justify-content:space-between;margin:-2px 0 18px;font-size:13px;color:var(--ink-2);}
+  .row-between label{display:inline-flex;align-items:center;gap:8px;min-height:32px;cursor:pointer;}
+  .row-between input[type=checkbox]{
+    width:24px;height:24px;margin:0;
+    accent-color:var(--accent);
+  }
+  .row-between a{display:inline-flex;align-items:center;min-height:28px;padding:0 2px;color:var(--accent);text-decoration:none;font-size:13px;}
+
+  .submit{
+    width:100%;height:44px;
+    border:0;border-radius:var(--radius-control);
+    background:var(--accent);color:#fff;
+    font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.02em;
+    cursor:pointer;
+  }
+  .submit:hover{background:#285182;}
+
+  .divider{margin:20px 0 16px;display:flex;align-items:center;gap:10px;color:var(--ink-3);font-size:12px;}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line);}
+  .foot-note{text-align:center;font-size:13px;color:var(--ink-2);}
+  .foot-note a{color:var(--accent);text-decoration:none;}
+
+  /* ---------- 移动 390x844 ---------- */
+  .phones{display:flex;gap:20px;flex-wrap:wrap;}
+  .phone{
+    width:100%;max-width:390px;flex:none;position:relative;
+    background:var(--paper);
+    border:1px solid var(--line-strong);
+    border-radius:22px;overflow:hidden;
+    box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  .phone .statusbar{
+    height:44px;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 20px 6px;font-size:12px;color:var(--ink-3);
+    background:var(--surface);
+  }
+  .phone .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 16px 12px;
+    background:var(--surface);
+    border-bottom:1px solid var(--line);
+  }
+  .phone .topbar .mark{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:600;}
+  .phone .topbar .mark .dot{width:6px;height:6px;border-radius:2px;background:var(--accent);}
+  .phone .topbar a{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:13px;color:var(--ink-2);text-decoration:none;
+    border:1px solid var(--line);border-radius:999px;padding:6px 11px;
+  }
+  .phone .body{padding:20px 16px 28px;}
+  /* tab 居中、宽 75%（改版前与返回首页同一行互相压住） */
+  .phone .tabs{width:75%;margin:0 auto 20px;}
+
+  .phone .card{
+    max-width:none;
+    padding:22px 18px 20px;
+    box-shadow:0 1px 2px rgba(24,24,22,.05);
+  }
+  .phone .card h3{font-size:17px;}
+  .phone .card .hint{font-size:13px;}
+
+  .phone .field{margin-bottom:14px;}
+  .phone .field input{height:46px;font-size:16px;} /* 16px：iOS 不触发自动放大 */
+  .phone .field .label{font-size:13px;margin-bottom:5px;}
+  .phone .submit{height:46px;font-size:15px;}
+
+  /* 表单只占 50% 宽的「桌面窄屏」反例说明，这里用注释标出，不画左右分栏 */
+
+  .annot{
+    max-width:1180px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;
+  }
+  .annot .item{
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;
+  }
+  .annot .item h4{margin:0 0 8px;font-size:13px;font-weight:600;}
+  .annot .item p{margin:0;font-size:13px;line-height:1.8;color:var(--ink-2);}
+  .annot .item code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12px;background:var(--surface-2);border:1px solid var(--line);
+    padding:1px 5px;border-radius:4px;color:#3a3a37;
+  }
+  .swatches{display:flex;gap:8px;margin-top:10px;}
+  .swatches i{display:block;width:34px;height:22px;border-radius:5px;border:1px solid rgba(0,0,0,.08);}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <div class="eyebrow">Redesign proposal · 不含代码</div>
+  <h1>登录 / 注册页改版方案</h1>
+  <p class="sub">
+    改版方向：删掉紫色渐变与白色圆环，回到与站点一致的中性纸面语言。<br />
+    表单不再用浮动 label 压边框，改为常规的「标签在框上方」；配色全部取自站点 token，四种主题自动跟随。<br />
+    下图为桌面稿与移动端两个关键状态。
+  </p>
+</div>
+
+<!-- ================= 桌面 ================= -->
+<div class="stage">
+  <div class="stage-label"><b>桌面 1440 × 860</b><span>左侧说明区 38%，右侧表单卡片 372px</span></div>
+  <div class="frame">
+    <div class="scaler" data-w="1440" data-h="860">
+      <div class="zoom">
+        <div class="desktop">
+      <div class="inner">
+        <div class="aside">
+          <div class="mark"><i class="dot"></i>FullStack Blog</div>
+          <div class="lede">
+            <h2>记录<br>思考所在。</h2>
+            <p>一个安静的地方，写技术笔记、读书摘录和还没想清楚的想法。没有数据面板，没有推送。</p>
+          </div>
+          <div class="meta">
+            <strong>128</strong> 位作者在此安家
+          </div>
+        </div>
+        <div class="panel">
+          <a class="back-home" href="#">← 返回首页</a>
+          <div class="card">
+            <h3>登录</h3>
+            <p class="hint">使用你的账号继续写作</p>
+
+            <div class="tabs">
+              <span class="slider"></span>
+              <button class="active">登录</button>
+              <button>注册</button>
+            </div>
+
+            <div class="field">
+              <label class="label">用户名</label>
+              <input placeholder="请输入用户名" />
+            </div>
+            <div class="field">
+              <label class="label">密码 <a class="inline-link" href="#">忘记密码？</a></label>
+              <input type="password" placeholder="请输入密码" />
+            </div>
+
+            <div class="row-between">
+              <label><input type="checkbox" checked /> 记住我</label>
+              <a href="#">没有账号？去注册</a>
+            </div>
+
+            <button class="submit">立即登录</button>
+
+            <div class="divider">或</div>
+            <p class="foot-note">遇到问题请邮件联系 <a href="#">asfre_001@qq.com</a></p>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 移动 ================= -->
+<div class="stage">
+  <div class="stage-label"><b>移动端 390 × 844</b><span>左：登录态；右：注册态（字段更多，仍不分栏）</span></div>
+  <div class="phones">
+    <!-- 登录 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>▲ ● ▮</span></div>
+      <div class="topbar">
+        <span class="mark"><i class="dot"></i>FullStack Blog</span>
+        <a href="#">← 返回首页</a>
+      </div>
+      <div class="body">
+        <div class="tabs">
+          <span class="slider"></span>
+          <button class="active">登录</button>
+          <button>注册</button>
+        </div>
+        <div class="card">
+          <h3>欢迎回来</h3>
+          <p class="hint">登录后即可评论与投稿</p>
+          <div style="height:18px"></div>
+          <div class="field">
+            <label class="label">用户名</label>
+            <input placeholder="请输入用户名" />
+          </div>
+          <div class="field">
+            <label class="label">密码 <a class="inline-link" href="#">忘记密码？</a></label>
+            <input type="password" placeholder="请输入密码" />
+          </div>
+          <div class="row-between">
+            <label><input type="checkbox" checked /> 记住我</label>
+            <a href="#">没有账号？去注册</a>
+          </div>
+          <button class="submit">立即登录</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 注册 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>▲ ● ▮</span></div>
+      <div class="topbar">
+        <span class="mark"><i class="dot"></i>FullStack Blog</span>
+        <a href="#">← 返回首页</a>
+      </div>
+      <div class="body">
+        <div class="tabs">
+          <span class="slider" style="transform:translateX(100%)"></span>
+          <button>登录</button>
+          <button class="active">注册</button>
+        </div>
+        <div class="card">
+          <h3>创建账号</h3>
+          <p class="hint">只要一个用户名和邮箱就能开始</p>
+          <div style="height:16px"></div>
+          <div class="field">
+            <label class="label">用户名</label>
+            <input placeholder="2–20 个字符" />
+          </div>
+          <div class="field">
+            <label class="label">邮箱</label>
+            <input placeholder="用于找回密码" />
+          </div>
+          <div class="field">
+            <label class="label">密码</label>
+            <input type="password" placeholder="至少 6 位" />
+          </div>
+          <div class="field">
+            <label class="label">确认密码</label>
+            <input type="password" placeholder="再输入一次" />
+          </div>
+          <button class="submit" style="margin-top:4px">立即免费创建</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="stage" style="margin-top:36px">
+  <div class="stage-label"><b>改版要点</b><span>逐条对应你提的问题</span></div>
+  <div class="annot">
+    <div class="item">
+      <h4>① 表单不再用浮动 label</h4>
+      <p>输入框只保留 <code>1px solid var(--line)</code>，label 移到框上方 6px，字号 13px。焦点态改 <code>border-color: var(--accent)</code> + <code>0 0 0 3px var(--accent-soft)</code>，不会再有「线穿字」或「实底切断边框」。</p>
+    </div>
+    <div class="item">
+      <h4>② 背景换回纸面 + 细线</h4>
+      <p>删掉紫色渐变与五个白色圆环；整页 <code>--paper</code>，卡片 <code>--surface</code> + <code>1px var(--line)</code>。四种主题自动跟随（石墨/暖炭深色，天气主题透出天空但卡片不透明）。</p>
+      <div class="swatches">
+        <i style="background:#f7f7f5"></i><i style="background:#15171a"></i><i style="background:#1a1816"></i><i style="background:#eef1f4"></i>
+      </div>
+    </div>
+    <div class="item">
+      <h4>③ 按钮对比度</h4>
+      <p>主按钮 <code>background: var(--accent)</code> + <code>color: var(--accent-contrast)</code>，纸白主题是 #2f5d8f / 白（对比 6.4:1），不再和背景糊在一起。悬停仅加深 10%，不加渐变和发光。</p>
+    </div>
+    <div class="item">
+      <h4>④ 移动端：返回首页不再压 tab</h4>
+      <p>「返回首页」放进顶栏右侧，tab 单独占一行、<code>width: 75%</code> + <code>margin: 0 auto</code>，两者永远不重叠。表单改为整页滚动，不再用抽屉（抽屉里 50% 宽的表单字段根本放不下）。</p>
+    </div>
+    <div class="item">
+      <h4>⑤ 「回到顶部」</h4>
+      <p>改成右下角 36px 圆形描边按钮（<code>--surface</code> 底 + <code>--line</code> 边），滚过 400px 才淡入；进入 0.18s，不需要它时不占视觉。移动端落在外观胶囊上方 12px，不与底栏打架。</p>
+    </div>
+    <div class="item">
+      <h4>⑥ 忘记密码 → 重置弹层</h4>
+      <p>点「忘记密码？」直接在页内弹层：用户名 + 注册邮箱 + 新密码 + 确认，调 <code>POST /api/auth/reset-password</code>，不发邮件、不发短信。已实现并通过实测（该接口已上线本地后端）。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 桌面稿按容器宽度等比缩放（固定 1440 画布，窄屏不压形）
+  function fitScalers(){
+    document.querySelectorAll('.scaler').forEach((box) => {
+      const w = Number(box.dataset.w) || 1440;
+      const h = Number(box.dataset.h) || 860;
+      const avail = box.clientWidth;
+      const k = Math.min(1, avail / w);
+      const zoom = box.querySelector('.zoom');
+      if (!zoom) return;
+      zoom.style.transform = 'scale(' + k + ')';
+      box.style.height = (h * k) + 'px';
+    });
+  }
+  window.addEventListener('resize', fitScalers);
+  window.addEventListener('load', fitScalers);
+  fitScalers();
+</script>
+</body>
+</html>

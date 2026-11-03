@@ -705,3 +705,136 @@ h1::after, h2::after, h3::after {
   background-color: var(--accent-color, #667eea) !important;
   border-color: var(--accent-color, #667eea) !important;
 }
+
+/* ==========================================================
+   后台管理：移动端表格 / 分页 / 筛选区通用适配
+   只加在 .admin-layout 作用域内，避免影响前台页面
+   ========================================================== */
+@media (max-width: 1024px) {
+  /* 表格：允许横向滚动而不是撑破容器 */
+  .admin-layout .el-table {
+    font-size: 13px;
+  }
+
+  .admin-layout .el-table th.el-table__cell,
+  .admin-layout .el-table td.el-table__cell {
+    padding: 8px 0;
+  }
+
+  .admin-layout .el-table .cell {
+    padding-left: 8px;
+    padding-right: 8px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  /* 表格里的操作按钮：小一号，竖向排不下时换行 */
+  .admin-layout .el-table .el-button {
+    margin-left: 0;
+    margin-right: 4px;
+    margin-bottom: 4px;
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  .admin-layout .el-table .el-button + .el-button {
+    margin-left: 0;
+  }
+
+  /* 分页：整行换行、居中，隐藏每页条数选择与跳页以腾出宽度 */
+  .admin-layout .el-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px 4px;
+    padding: 4px 0;
+    font-size: 12px;
+  }
+
+  .admin-layout .el-pagination .el-pagination__total,
+  .admin-layout .el-pagination .el-pagination__jump {
+    margin-left: 0;
+    font-size: 12px;
+  }
+
+  .admin-layout .el-pagination .el-pagination__sizes {
+    margin-right: 0;
+    width: 96px;
+  }
+
+  .admin-layout .el-pagination button,
+  .admin-layout .el-pagination .el-pager li {
+    min-width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 12px;
+  }
+
+  .admin-layout .el-pagination.is-background .el-pager li {
+    margin: 0 2px;
+  }
+
+  /* 后台各页的分页容器 */
+  .admin-layout .pagination {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+  }
+
+  /* 筛选卡片：内边距收紧、控件撑满一行 */
+  .admin-layout .filter-card,
+  .admin-layout .search-filter {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .admin-layout .filter-conditions {
+    gap: 8px;
+  }
+
+  .admin-layout .filter-conditions > *,
+  .admin-layout .filter-conditions .el-input,
+  .admin-layout .filter-conditions .el-select,
+  .admin-layout .filter-conditions .el-date-editor {
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  .admin-layout .filter-actions {
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  .admin-layout .filter-actions-left,
+  .admin-layout .filter-actions-right,
+  .admin-layout .actions-left,
+  .admin-layout .actions-right {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-layout .filter-actions .el-button {
+    margin-left: 0;
+    height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  /* 页面级工具条（新增文章等）同样换行 */
+  .admin-layout .page-actions,
+  .admin-layout .table-toolbar,
+  .admin-layout .card-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .admin-layout .page-actions .el-button,
+  .admin-layout .table-toolbar .el-button {
+    margin-left: 0;
+  }
+}

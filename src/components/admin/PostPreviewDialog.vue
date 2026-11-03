@@ -166,7 +166,8 @@ const props = withDefaults(defineProps<Props>(), {
   postSlug: null,
   fetchMode: 'auto',
   title: '文章预览',
-  width: '70%'
+  // 移动端宽度交给媒体查询兜底：70% 在小屏上只剩不到 250px，读起来太挤
+  width: typeof window !== 'undefined' && window.innerWidth <= 768 ? '94%' : '70%'
 })
 
 const emit = defineEmits<{
@@ -587,5 +588,12 @@ watch(
 
 .toc-level-6 {
   padding-left: 5rem;
+}
+
+@media (max-width: 768px) {
+  .post-preview {
+    padding: 0.5rem;
+    max-height: 78vh;
+  }
 }
 </style>

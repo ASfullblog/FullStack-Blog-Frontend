@@ -26,5 +26,15 @@ export const authApi = {
     return request.post('/auth/login', { username, password })
   },
 
+  /**
+   * 重置密码：用「用户名 + 注册邮箱」校验身份后直接改密码（不发邮件/短信）
+   * @param username 用户名
+   * @param email 注册邮箱
+   * @param newPassword 新密码
+   */
+  resetPassword: async (username: string, email: string, newPassword: string): Promise<ApiResponse<null>> => {
+    return request.post('/auth/reset-password', { username, email, newPassword })
+  },
+
 
 }

@@ -1,43 +1,13 @@
 <template>
   <div class="dashboard">
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon bg-blue-500">
-          <el-icon><Document /></el-icon>
+      <div v-for="item in statCards" :key="item.label" class="stat-card">
+        <div class="stat-icon">
+          <AppIcon :name="item.icon" :size="18" />
         </div>
         <div class="stat-content">
-          <div class="stat-number">{{ stats.posts }}</div>
-          <div class="stat-label">文章总数</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon bg-green-500">
-          <el-icon><Collection /></el-icon>
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ stats.categories }}</div>
-          <div class="stat-label">分类总数</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon bg-purple-500">
-          <el-icon><ChatLineRound /></el-icon>
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ stats.comments }}</div>
-          <div class="stat-label">评论总数</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon bg-orange-500">
-          <el-icon><View /></el-icon>
-        </div>
-        <div class="stat-content">
-          <div class="stat-number">{{ stats.totalViews }}</div>
-          <div class="stat-label">总浏览量</div>
+          <div class="stat-number">{{ item.value }}</div>
+          <div class="stat-label">{{ item.label }}</div>
         </div>
       </div>
     </div>
@@ -89,13 +59,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import {
-  ChatLineRound,
-  Collection,
-  Document,
-  View
-} from '@element-plus/icons-vue'
+import { computed, onMounted, ref } from 'vue'
+import AppIcon from '../../components/icons/AppIcon.vue'
 import request from '../../utils/request'
 import { postApi } from '../../api/post'
 import PostPreviewDialog from '../../components/admin/PostPreviewDialog.vue'
@@ -125,6 +90,14 @@ const stats = ref<DashboardStats>({
   gameViews: 0,
   totalViews: 0
 })
+
+// 统计卡：与前台统计页同一套中性图标语言，不再用彩色圆点
+const statCards = computed(() => [
+  { label: '文章总数', value: stats.value.posts, icon: 'document' },
+  { label: '分类总数', value: stats.value.categories, icon: 'folder' },
+  { label: '评论总数', value: stats.value.comments, icon: 'message' },
+  { label: '总浏览量', value: stats.value.totalViews, icon: 'eye' }
+])
 
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleString('zh-CN', {
@@ -203,15 +176,17 @@ onMounted(() => {
 }
 
 .stat-icon {
-  width: 3.5rem;
-  height: 3.5rem;
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 1rem;
-  color: #fff;
-  font-size: 1.5rem;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: 0.875rem;
+  border-radius: 8px;
+  background: var(--adm-surface-2, #fafbfc);
+  border: 1px solid var(--adm-border, #e4e7eb);
+  color: var(--adm-text-2, #5c636b);
 }
 
 .stat-number,
@@ -223,7 +198,12 @@ onMounted(() => {
 .stat-label,
 .sub-stat-label {
   font-size: 0.875rem;
-  color: var(--text-secondary, #6b7280);
+  color: var(--adm-text-2, #5c636b);
+}
+
+.stat-number,
+.sub-stat-number {
+  color: var(--adm-text, #1f2328);
 }
 
 .recent-posts {
@@ -237,14 +217,67 @@ onMounted(() => {
 }
 
 .post-title {
-  color: #3b82f6;
+  color: var(--adm-text, #1f2328);
+  border-bottom: 1px solid var(--adm-border, #e4e7eb);
   text-decoration: none;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .post-title:hover {
-  color: #2563eb;
-  text-decoration: underline;
+  color: var(--adm-text-2, #5c636b);
+}
+@media (max-width: 768px) {
+  .dashboard {
+    padding: 0;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .sub-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .stat-card {
+    padding: 12px;
+    gap: 0;
+  }
+
+  .stat-icon {
+    width: 28px;
+    height: 28px;
+    margin-right: 8px;
+    border-radius: 6px;
+  }
+
+  .stat-number,
+  .sub-stat-number {
+    font-size: 1.125rem;
+    line-height: 1.3;
+  }
+
+  .stat-label,
+  .sub-stat-label {
+    font-size: 0.75rem;
+  }
+
+  .sub-stat-card {
+    padding: 10px 12px;
+  }
+
+  .recent-posts {
+    padding: 12px;
+  }
+
+  .section-title {
+    margin: 0 0 8px;
+    font-size: 0.9375rem;
+  }
 }
 </style>

@@ -81,7 +81,15 @@ const LIGHT: TokenMap = {
   '--el-box-shadow': '0 1px 2px rgba(24, 24, 22, 0.06)',
   '--el-box-shadow-light': '0 1px 2px rgba(24, 24, 22, 0.05)',
   '--el-box-shadow-lighter': '0 1px 1px rgba(24, 24, 22, 0.04)',
-  '--el-box-shadow-dark': '0 8px 24px -8px rgba(24, 24, 22, 0.18)'
+  '--el-box-shadow-dark': '0 8px 24px -8px rgba(24, 24, 22, 0.18)',
+  // 后台管理独立中性色板（不跟随主题强调色，表格/表单保持中性）
+  '--adm-bg': '#f4f5f7',
+  '--adm-surface': '#ffffff',
+  '--adm-surface-2': '#fafbfc',
+  '--adm-border': '#e4e7eb',
+  '--adm-text': '#1f2328',
+  '--adm-text-2': '#5c636b',
+  '--adm-text-3': '#8b929a',
 }
 
 /** 石墨：深灰蓝底，文字略暖白，强调色是低饱和的青灰蓝 */
@@ -142,7 +150,15 @@ const DARK: TokenMap = {
   '--el-box-shadow': '0 1px 2px rgba(0, 0, 0, 0.4)',
   '--el-box-shadow-light': '0 1px 2px rgba(0, 0, 0, 0.35)',
   '--el-box-shadow-lighter': '0 1px 1px rgba(0, 0, 0, 0.3)',
-  '--el-box-shadow-dark': '0 10px 28px -10px rgba(0, 0, 0, 0.7)'
+  '--el-box-shadow-dark': '0 10px 28px -10px rgba(0, 0, 0, 0.7)',
+  // 后台管理独立中性色板（不跟随主题强调色，表格/表单保持中性）
+  '--adm-bg': '#14161a',
+  '--adm-surface': '#1b1e23',
+  '--adm-surface-2': '#20242a',
+  '--adm-border': '#2b3038',
+  '--adm-text': '#e8e9eb',
+  '--adm-text-2': '#a6adb6',
+  '--adm-text-3': '#7c848e',
 }
 
 /** 暖炭：偏棕的暗底 + 陶土橙作为唯一强调色，夜晚阅读更柔和 */
@@ -203,7 +219,15 @@ const DUSK: TokenMap = {
   '--el-box-shadow': '0 1px 2px rgba(0, 0, 0, 0.4)',
   '--el-box-shadow-light': '0 1px 2px rgba(0, 0, 0, 0.35)',
   '--el-box-shadow-lighter': '0 1px 1px rgba(0, 0, 0, 0.3)',
-  '--el-box-shadow-dark': '0 10px 28px -10px rgba(0, 0, 0, 0.7)'
+  '--el-box-shadow-dark': '0 10px 28px -10px rgba(0, 0, 0, 0.7)',
+  // 后台管理独立中性色板（不跟随主题强调色，表格/表单保持中性）
+  '--adm-bg': '#191715',
+  '--adm-surface': '#201d1a',
+  '--adm-surface-2': '#272320',
+  '--adm-border': '#322d28',
+  '--adm-text': '#ebe5dc',
+  '--adm-text-2': '#a9a196',
+  '--adm-text-3': '#7f776c',
 }
 
 /** 天气主题的内容层：按昼夜在两套中性底色间切换（背景由 Canvas 负责） */
@@ -233,7 +257,15 @@ const WEATHER_DAY: TokenMap = {
   '--sidebar-hover': '#353d44',
   '--sidebar-border': '#3a4249',
   '--sidebar-glow': 'rgba(58, 111, 143, 0.18)',
-  '--header-shadow': '0 1px 0 var(--border-color)'
+  '--header-shadow': '0 1px 0 var(--border-color)',
+  // 后台管理独立中性色板（不跟随主题强调色，表格/表单保持中性）
+  '--adm-bg': '#eef1f4',
+  '--adm-surface': '#ffffff',
+  '--adm-surface-2': '#f8fafb',
+  '--adm-border': '#e2e6ea',
+  '--adm-text': '#1d2126',
+  '--adm-text-2': '#565d66',
+  '--adm-text-3': '#868d96',
 }
 
 const WEATHER_NIGHT: TokenMap = {

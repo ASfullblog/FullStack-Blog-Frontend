@@ -125,7 +125,9 @@
           <MdEditor
             v-model="form.content"
             :toolbars="toolbars"
-            :preview="true"
+            :preview="!isMobile"
+            :preview-width="isMobile ? 0 : undefined"
+            :editor-height="isMobile ? '320px' : undefined"
             :upload-image-config="{
               url: 'https://jsonplaceholder.typicode.com/posts/',
               headers: {
@@ -1085,6 +1087,78 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
 
 <style scoped>
 /* 手机上编辑弹窗的表单：label 置顶自适应宽度，编辑器工具栏换行完整展示 */
+/* Markdown 编辑器：桌面保持默认，移动端把工具栏全部换行展开 */
+@media (max-width: 768px) {
+  .post-form :deep(.md-editor) {
+    --md-editor-height: 100%;
+  }
+
+  /* 工具栏容器允许换行，所有按钮都完整显示 */
+  .post-form :deep(.md-editor-toolbar-wrapper) {
+    padding: 4px 6px;
+    overflow: visible;
+  }
+
+  .post-form :deep(.md-editor-toolbar) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 0;
+    height: auto;
+    min-height: 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .post-form :deep(.md-editor-toolbar > li) {
+    flex: none;
+    margin: 0;
+  }
+
+  /* 各按钮组（li 内 ul）也允许换行 */
+  .post-form :deep(.md-editor-toolbar ul) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    height: auto;
+  }
+
+  .post-form :deep(.md-editor-toolbar-item) {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    font-size: 14px;
+  }
+
+  .post-form :deep(.md-editor-toolbar-item svg) {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* 移动端不做左右分栏：编辑器铺满宽度，预览用工具栏的「预览」按钮全屏看 */
+  .post-form :deep(.md-editor-content) {
+    display: block;
+  }
+
+  .post-form :deep(.md-editor-input-wrapper) {
+    width: 100%;
+    border-right: none;
+  }
+
+  .post-form :deep(.md-editor-preview-wrapper) {
+    display: none;
+  }
+
+  /* 底部状态栏：移动端隐藏字数统计，省一行高度 */
+  .post-form :deep(.md-editor-footer) {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .post-form :deep(.el-form-item) {
     display: block;
