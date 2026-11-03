@@ -249,14 +249,14 @@ onMounted(() => {
 
 .settings-card {
   margin-bottom: 1.5rem;
-  background-color: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background-color: var(--adm-surface, #ffffff);
+  border: 1px solid var(--adm-border, #e5e7eb);
   transition: all 0.3s ease;
 }
 
 .settings-card :deep(.el-card__header) {
   background-color: var(--bg-secondary, #ffffff);
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  border-bottom: 1px solid var(--adm-border, #e5e7eb);
   transition: all 0.3s ease;
 }
 
@@ -298,7 +298,7 @@ onMounted(() => {
 
 .logo-image {
   height: 40px;
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--adm-border, #e5e7eb);
   border-radius: 0.375rem;
 }
 

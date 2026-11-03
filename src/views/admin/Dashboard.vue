@@ -186,8 +186,8 @@ onMounted(() => {
 .stat-card,
 .sub-stat-card,
 .recent-posts {
-  background-color: var(--card-bg, #fff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background-color: var(--adm-surface, #fff);
+  border: 1px solid var(--adm-border, #e5e7eb);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }

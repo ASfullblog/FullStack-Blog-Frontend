@@ -4,10 +4,18 @@
     <el-dialog
       v-model="dialogVisible"
       :title="isEdit ? '编辑文章' : '创建文章'"
-      width="80%"
+      :width="isMobile ? '94%' : '80%'"
+      class="post-dialog"
       :before-close="handleDialogClose"
     >
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+      <el-form
+        :model="form"
+        :rules="rules"
+        ref="formRef"
+        :label-width="isMobile ? 'auto' : '100px'"
+        :label-position="isMobile ? 'top' : 'right'"
+        class="post-form"
+      >
         <!-- 文章标题 -->
         <el-form-item label="标题" prop="title">
           <el-input v-model="form.title" placeholder="请输入文章标题" maxlength="200" show-word-limit />
@@ -364,7 +372,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed, nextTick, watch } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElImageViewer } from 'element-plus'
 import { MdEditor } from 'md-editor-v3'
@@ -413,6 +421,10 @@ const categories = ref<Category[]>([])
 
 // 响应式数据
 const dialogVisible = ref(false)
+
+/** 窄屏：表单 label 置顶自适应，编辑弹窗接近全屏 */
+const isMobile = ref(window.innerWidth <= 768)
+const onResize = () => { isMobile.value = window.innerWidth <= 768 }
 const isEdit = ref(false)
 const formRef = ref()
 const loading = ref(false)
@@ -1060,13 +1072,51 @@ const fetchPosts = async () => {
 
 // 页面挂载时获取数据
 onMounted(() => {
+  window.addEventListener('resize', onResize)
+
   fetchCategories()
   fetchTags()
   fetchPosts()
 })
 </script>
 
+
+onBeforeUnmount(() => window.removeEventListener('resize', onResize))
+
 <style scoped>
+/* 手机上编辑弹窗的表单：label 置顶自适应宽度，编辑器工具栏换行完整展示 */
+@media (max-width: 768px) {
+  .post-form :deep(.el-form-item) {
+    display: block;
+  }
+
+  .post-form :deep(.el-form-item__label) {
+    width: auto !important;
+    display: block;
+    margin-bottom: 6px;
+    line-height: 1.4;
+    text-align: left;
+  }
+
+  .post-form :deep(.el-form-item__content) {
+    margin-left: 0 !important;
+  }
+
+  .post-form :deep(.md-editor-toolbar-wrapper) {
+    overflow: visible;
+  }
+
+  .post-form :deep(.md-editor-toolbar) {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    overflow: visible;
+  }
+
+  .post-form :deep(.md-editor-toolbar-item) {
+    flex: none;
+  }
+}
+
 .post-list {
   padding: 1rem 0;
 }
@@ -1093,8 +1143,8 @@ onMounted(() => {
   gap: 0.75rem;
   padding: 0.75rem 1.5rem;
   margin-bottom: 1rem;
-  background-color: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background-color: var(--adm-surface, #ffffff);
+  border: 1px solid var(--adm-border, #e5e7eb);
   border-left: 4px solid #f59e0b;
   border-radius: 0.5rem;
 }
@@ -1107,8 +1157,8 @@ onMounted(() => {
 
 /* 搜索和筛选样式 */
 .search-filter {
-  background-color: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background-color: var(--adm-surface, #ffffff);
+  border: 1px solid var(--adm-border, #e5e7eb);
   border-radius: 0.5rem;
   box-shadow: var(--shadow-color, 0 1px 3px rgba(0, 0, 0, 0.1));
   padding: 1.5rem;

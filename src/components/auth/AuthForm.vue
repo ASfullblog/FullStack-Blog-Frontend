@@ -914,9 +914,14 @@ onMounted(() => {
 
 .form-field.focused .field-label,
 .form-field.filled .field-label {
-  top: 0;
+  top: -6px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  padding: 0 5px;
+  color: rgba(255, 255, 255, 0.82);
+  /* 坐在输入框上边框线上：实底遮住这条线，形成"缺口"效果 */
+  background: var(--auth-label-bg, #5d3f9e);
+  border-radius: 2px;
+  z-index: 2;
 }
 
 .form-field.error .field-label {
@@ -1078,22 +1083,14 @@ onMounted(() => {
   margin: 20px auto 1px;
   border: none;
   border-radius: 12px;
-  background: #2a1a5e;
+  background: linear-gradient(45deg, #8547be 0%, #813eec 100%);
   color: #ffffff;
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: background-color 0.2s ease;
-  box-shadow: 0 6px 18px rgba(20, 10, 45, 0.35);
-}
-
-.submit-btn:hover:not(:disabled) {
-  background: #36206f;
-}
-
-.submit-btn:active:not(:disabled) {
-  background: #22144f;
+  box-shadow: 3px 3px 10px 1px rgba(20, 10, 45, 0.35);
 }
 
 .submit-btn:focus-visible {
@@ -1412,11 +1409,14 @@ onMounted(() => {
 
   .form-section .form-field.focused .field-label,
   .form-section .form-field.filled .field-label {
-    top: -7px;
-    left: 44px;
+    top: -6px;
+    left: 40px;
     font-size: 11px;
-    padding: 0;
-    color: rgba(255, 255, 255, 0.75);
+    padding: 0 5px;
+    color: rgba(255, 255, 255, 0.85);
+    background: var(--auth-label-bg, #5d3f9e);
+    border-radius: 2px;
+    z-index: 2;
   }
 
   .form-section .form-field.focused .field-label,
@@ -1475,18 +1475,9 @@ onMounted(() => {
   /* 移动端提交按钮：与桌面同一套深底白字，手机上看得清 */
   .form-section .submit-btn {
     width: 100%;
-    background: #2a1a5e;
+    background: linear-gradient(45deg, #8547be 0%, #813eec 100%);
     border: none;
     color: #ffffff;
-    box-shadow: 0 6px 18px rgba(20, 10, 45, 0.35);
-  }
-
-  .form-section .submit-btn:hover:not(:disabled) {
-    background: #36206f;
-  }
-
-  .form-section .submit-btn:active:not(:disabled) {
-    background: #22144f;
   }
 
   /* 移动端切换提示 */

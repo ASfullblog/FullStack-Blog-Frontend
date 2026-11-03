@@ -172,8 +172,8 @@ onMounted(() => {
 
 /* 筛选卡片 */
 .search-filter {
-  background-color: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background-color: var(--adm-surface, #ffffff);
+  border: 1px solid var(--adm-border, #e5e7eb);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 1.25rem 1.5rem;

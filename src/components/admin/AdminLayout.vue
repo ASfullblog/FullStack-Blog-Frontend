@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-layout">
+  <div class="admin-layout" :class="{ 'is-dark': isDark }">
     <!-- 移动端：侧栏改为抽屉，遮罩点击关闭 -->
     <Transition name="mask-fade">
       <div
@@ -117,6 +117,14 @@ const route = useRoute()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
 
+/** 天气主题按昼夜决定后台明暗：白天走亮色工作区，夜间跟暗色一致 */
+const isDark = computed(() => {
+  const t = themeStore.currentTheme
+  if (t === 'dark' || t === 'dusk') return true
+  if (t === 'weather') return !!themeStore.weather && !themeStore.weather.isDay
+  return false
+})
+
 const user = computed(() => userStore.currentUser)
 
 const navItems = [
@@ -210,12 +218,38 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .admin-layout {
+  /* 后台是工作区，不是阅读页：用自成一体的中性灰阶，不吃前台主题变量，
+     否则天气主题的透明卡片 / 背景动效会直接透到表格里 */
+  --adm-bg: #f4f5f7;
+  --adm-surface: #ffffff;
+  --adm-surface-2: #fafbfc;
+  --adm-border: #e4e7eb;
+  --adm-text: #1f2328;
+  --adm-text-2: #5c636b;
+  --adm-text-3: #8b929a;
+
+  position: relative;
+  z-index: 20;
   display: flex;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  background-color: var(--bg-primary, #f5f7fa);
+  background-color: var(--adm-bg);
+  color: var(--adm-text);
 }
+
+/* 暗色后台：整体压暗一档 */
+.admin-layout.is-dark {
+  --adm-bg: #14161a;
+  --adm-surface: #1b1e23;
+  --adm-surface-2: #20242a;
+  --adm-border: #2b3038;
+  --adm-text: #e8e9eb;
+  --adm-text-2: #a6adb6;
+  --adm-text-3: #7c848e;
+}
+
+
 
 /* ---------- 侧栏 ---------- */
 .sidebar {
@@ -439,13 +473,14 @@ onBeforeUnmount(() => {
 
 .main-header {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   height: 52px;
   padding: 0 20px;
-  border-bottom: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-primary, #fff);
+  border-bottom: 1px solid var(--adm-border);
+  background: var(--adm-surface);
 }
 
 .header-left {
@@ -498,7 +533,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-color, #1b1b1a);
+  color: var(--adm-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -508,6 +543,8 @@ onBeforeUnmount(() => {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 20px;
+  background: var(--adm-bg);
+  color: var(--adm-text);
 }
 
 /* ---------- 移动端 / 平板：抽屉式侧栏 ---------- */

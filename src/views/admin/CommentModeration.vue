@@ -362,7 +362,7 @@ onMounted(() => {
   margin-bottom: 20px;
   padding: 20px;
   background: var(--bg-secondary, #f5f7fa);
-  border: 1px solid var(--border-color, #e5e7eb);
+  border: 1px solid var(--adm-border, #e5e7eb);
   border-radius: 8px;
   transition: all 0.3s ease;
 }
@@ -390,7 +390,7 @@ onMounted(() => {
 
 /* 表格样式适配主题 */
 :deep(.el-table) {
-  background-color: var(--card-bg, #ffffff);
+  background-color: var(--adm-surface, #ffffff);
   color: var(--text-primary, #1f2937);
 }
 
@@ -400,7 +400,7 @@ onMounted(() => {
 }
 
 :deep(.el-table__row) {
-  background-color: var(--card-bg, #ffffff);
+  background-color: var(--adm-surface, #ffffff);
 }
 
 :deep(.el-table__row:hover > td) {

@@ -541,20 +541,114 @@ h1::after, h2::after, h3::after {
 
 .el-table {
   transition: all 0.3s ease;
+  /* Element Plus 默认把表格底色写死成 #fff，暗色下会白成一片 */
+  --el-table-bg-color: var(--adm-surface, var(--card-bg, #ffffff));
+  --el-table-tr-bg-color: var(--adm-surface, var(--card-bg, #ffffff));
+  --el-table-header-bg-color: var(--adm-surface-2, var(--bg-tertiary, #f1f5f9));
+  --el-table-row-hover-bg-color: var(--adm-surface-2, var(--hover-bg, #f3f4f6));
+  --el-table-border-color: var(--adm-border, var(--border-color, #e3e3de));
+  --el-table-text-color: var(--adm-text, var(--text-primary, #1f2937));
+  --el-table-header-text-color: var(--adm-text, var(--text-primary, #1f2937));
+  background-color: var(--adm-surface, var(--card-bg, #ffffff));
+  color: var(--adm-text, var(--text-primary, #1f2937));
 }
 
-.el-table th {
-  background-color: var(--bg-tertiary, #f1f5f9) !important;
-  color: var(--text-primary, #1f2937) !important;
+.el-table th.el-table__cell {
+  background-color: var(--adm-surface-2, var(--bg-tertiary, #f1f5f9)) !important;
+  color: var(--adm-text-2, var(--text-primary, #1f2937)) !important;
+  font-weight: 600;
   transition: all 0.3s ease;
 }
 
-.el-table tr {
+.el-table td.el-table__cell,
+.el-table tr.el-table__row {
+  /* 必须显式给底色：EP 的 tr 自带 #fff，靠变量覆盖不到 */
+  background-color: var(--adm-surface, var(--card-bg, #ffffff)) !important;
+  color: var(--adm-text, var(--text-primary, #1f2937));
   transition: all 0.3s ease;
 }
 
-.el-table tr:hover {
-  background-color: var(--hover-bg, #f3f4f6) !important;
+.el-table tr:hover > td.el-table__cell {
+  background-color: var(--adm-surface-2, var(--hover-bg, #f3f4f6)) !important;
+}
+
+.el-table__empty-text,
+.el-table__empty-block {
+  color: var(--text-secondary, #8a8a85);
+  background-color: transparent;
+}
+
+/* 输入 / 下拉 / 文本域：暗色下不再白底 */
+.el-input__wrapper,
+.el-textarea__inner,
+.el-select__wrapper {
+  background-color: var(--adm-surface, var(--bg-secondary, #ffffff)) !important;
+  box-shadow: 0 0 0 1px var(--adm-border, var(--border-color, #e3e3de)) inset !important;
+  color: var(--adm-text, var(--text-color, #1b1b1a));
+}
+
+.el-input__wrapper.is-focus,
+.el-select__wrapper.is-focused,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--accent-color, #2f5d8f) inset !important;
+}
+
+.el-input__inner,
+.el-textarea__inner,
+.el-select__placeholder {
+  color: var(--adm-text, var(--text-color, #1b1b1a)) !important;
+}
+
+.el-input__inner::placeholder,
+.el-textarea__inner::placeholder {
+  color: var(--text-tertiary, #9a9a94) !important;
+}
+
+/* 分页 / 按钮 / 标签在暗色下的底色 */
+.el-pagination button,
+.el-pagination .el-pager li {
+  background-color: transparent;
+  color: var(--text-secondary, #5c5c58);
+}
+
+.el-pagination .el-pager li.is-active {
+  background-color: var(--accent-color, #2f5d8f) !important;
+  color: var(--accent-contrast, #fff) !important;
+}
+
+.el-button--default {
+  --el-button-bg-color: var(--adm-surface, var(--card-bg, #fff));
+  --el-button-text-color: var(--adm-text, var(--text-color, #1b1b1a));
+  --el-button-border-color: var(--adm-border, var(--border-color, #e3e3de));
+  --el-button-hover-bg-color: var(--adm-surface-2, var(--hover-bg, #f2f2ef));
+  --el-button-hover-text-color: var(--adm-text, var(--text-color, #1b1b1a));
+  --el-button-hover-border-color: var(--border-strong, #d4d4d0);
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--accent-color, #2f5d8f);
+  --el-button-border-color: var(--accent-color, #2f5d8f);
+  --el-button-text-color: var(--accent-contrast, #ffffff);
+  --el-button-hover-bg-color: var(--accent-secondary, #3d6f9f);
+  --el-button-hover-border-color: var(--accent-secondary, #3d6f9f);
+  --el-button-hover-text-color: var(--accent-contrast, #ffffff);
+}
+
+.el-form-item__label {
+  color: var(--adm-text-2, var(--text-secondary, #5c5c58)) !important;
+}
+
+.el-dropdown-menu,
+.el-select-dropdown,
+.el-popper.is-light {
+  background-color: var(--card-bg, #fff) !important;
+  border-color: var(--border-color, #e3e3de) !important;
+  color: var(--text-color, #1b1b1a);
+}
+
+.el-dialog__headerbtn .el-dialog__close,
+.el-dialog__headerbtn:hover .el-dialog__close {
+  color: var(--text-secondary, #5c5c58);
 }
 
 .el-dialog {

@@ -267,8 +267,8 @@ onMounted(() => {
 
 /* 筛选卡片：上半筛选条件，下半左新增 / 右搜索重置 */
 .filter-card {
-  background-color: var(--card-bg, #ffffff);
-  border: 1px solid var(--border-color, #e5e7eb);
+  background-color: var(--adm-surface, #ffffff);
+  border: 1px solid var(--adm-border, #e5e7eb);
   border-radius: 0.5rem;
   box-shadow: var(--shadow-color, 0 1px 3px rgba(0, 0, 0, 0.1));
   padding: 1.5rem;

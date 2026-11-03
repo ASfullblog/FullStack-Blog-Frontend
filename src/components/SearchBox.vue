@@ -260,15 +260,18 @@ const goToPost = (slug: string) => {
 }
 
 .search-input {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   border: none;
   background: transparent;
   outline: none;
   padding: 0;
   font-size: 14px;
+  line-height: 1.4;
   color: var(--text-color, #1b1b1a);
   width: 0;
-  transition: width 0.2s ease;
+  /* 过渡只作用在容器宽度上，文字本身不做宽度动画，避免被半截裁切 */
+  transition: none;
 }
 
 .search-input::placeholder {

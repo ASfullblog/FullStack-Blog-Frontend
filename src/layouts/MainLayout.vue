@@ -239,6 +239,7 @@ onUnmounted(() => {
 /* 正文容器：限宽居中 */
 .main-inner {
   width: 100%;
+  /* height: 75vh; */
   max-width: 64rem;
   margin: 0 auto;
 }
@@ -361,19 +362,26 @@ onUnmounted(() => {
 /* 移动端：底栏是 fixed，给页面留出足够的下边距，footer 不再被压住 */
 @media (max-width: 768px) {
   .main-layout {
-    /* 底栏实际高度 + 安全区，再给右下角外观按钮留出空间，页脚版权不被压住 */
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 64px);
+    /* 底栏高度 + 安全区 + 一颗外观按钮的高度，页脚内容整体落在按钮上方 */
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 52px);
   }
 
+  /* 移动端页脚：紧凑一点，版权行居中，左右不再留空 */
   .footer {
-    margin-bottom: 0;
+    margin: 0.25rem 0 0;
+    padding: 0.5rem 0 0.25rem;
+  }
+
+  .footer .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .footer-text {
-  padding-right: 96px;
-  padding-left: 96px;
+    padding: 0;
     text-align: center;
-    padding-bottom: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
   }
 }
 </style>
