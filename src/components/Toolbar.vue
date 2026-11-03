@@ -48,10 +48,12 @@ onUnmounted(() => {
 
 <style scoped>
 /* 回到顶部按钮 - 简约设计 */
+/* 主题切换按钮固定在 right:18px / bottom:18px，高 34px；
+   回到顶部与它右边缘对齐，并整体上移 34px + 12px 间距，避免两者重合 */
 .back-to-top {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  right: 18px;
+  bottom: 64px;
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -88,12 +90,12 @@ onUnmounted(() => {
   transform: scale(0.95);
 }
 
-/* 响应式 - 移动端适配底部导航栏 */
+/* 响应式 - 移动端适配底部导航栏（主题按钮移动端高 32px） */
 @media (max-width: 768px) {
   .back-to-top {
-    right: 16px;
-    /* 避开底部导航栏 (约 50px) + 间距 */
-    bottom: 70px;
+    right: 12px;
+    /* 避开底部导航栏 (约 50px) + 主题按钮(32px) + 间距 */
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px + 32px + 10px);
     width: 36px;
     height: 36px;
   }
