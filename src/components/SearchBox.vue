@@ -205,6 +205,16 @@ const goToPost = (slug: string) => {
 </script>
 
 <style scoped>
+/* 收起状态只是一个图标按钮，不能被 flex 拉伸成整行 */
+.search-box {
+  flex: none;
+}
+
+.search-box.expanded {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 /* 搜索框样式 */
 .search-container {
   position: relative;

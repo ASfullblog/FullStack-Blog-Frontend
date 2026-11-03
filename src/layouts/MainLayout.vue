@@ -12,23 +12,20 @@
         'py-4'
       ]"
     >
-      <div class="container mx-auto px-4 flex items-center justify-between">
-        <!-- 桌面端Logo -->
-        <router-link 
-          to="/" 
-          class="text-2xl font-bold text-primary-600 mr-6"
-        >
+      <div class="container header-inner">
+        <!-- 桌面端Logo（不换行、不被压缩） -->
+        <router-link to="/" class="header-logo">
           FullStack-Blog
         </router-link>
-        
-        <!-- 搜索框组件 -->
-        <SearchBox :is-showMobile="isMobile" />
-        
-        <!-- 导航菜单组件 -->
-        <NavMenu :is-mobile="isMobile" />
 
-        <!-- 用户操作区组件 -->
-        <UserActions :is-mobile="isMobile" />
+        <!-- 导航菜单：靠左紧跟 Logo -->
+        <NavMenu :is-mobile="isMobile" class="header-nav" />
+
+        <!-- 搜索框与用户操作：靠右成组 -->
+        <div class="header-tools">
+          <SearchBox :is-showMobile="isMobile" />
+          <UserActions :is-mobile="isMobile" />
+        </div>
       </div>
     </header>
 
@@ -77,8 +74,11 @@
     </div>
 
     <!-- 主内容区 -->
+    <!-- 内容区整条横幅铺满（与页头、页脚同宽），只有正文限宽居中 -->
     <main class="main-content" :class="{'pt-3': !isMobile}">
-      <router-view />
+      <div class="main-inner">
+        <router-view />
+      </div>
     </main>
 
     <!-- 页脚 -->
@@ -200,14 +200,49 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
+/* 页头内部：logo / 导航 / 搜索+操作 三段式，导航居中，两端不换行 */
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.header-logo {
+  flex: none;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-color, #1b1b1a);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.header-nav {
+  flex: none;
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  min-width: 0;
+}
+
 /* 主内容区样式 */
 .main-content {
+  flex: 1;
+  width: 100%;
+}
+
+/* 正文容器：限宽居中 */
+.main-inner {
   width: 100%;
   max-width: 64rem;
-  margin-left: auto;
-  margin-right: auto;
-  flex: 1;
+  margin: 0 auto;
 }
+
 
 /* 页脚样式 */
 .footer {
@@ -216,13 +251,11 @@ onUnmounted(() => {
   transition: all 0.3s ease;
 }
 
-/* 页脚容器：与主内容区同宽，上下留一点呼吸 */
+/* 页脚容器：背景铺满整宽，内容限 64rem 居中 */
 .container {
-  max-width: 64rem;
-  padding-left: 1rem;
-  padding-right: 1rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem max(1rem, calc((100% - 68rem) / 2 + 1rem));
 }
 
 /* 页脚里的摘抄语录：限宽居中，作为页脚注脚出现，不喧宾夺主 */
@@ -243,7 +276,7 @@ onUnmounted(() => {
 .footer-text {
   text-align: right;
   color: var(--text-tertiary);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
 }
 
 /* ---------- 移动端底部导航 ---------- */
@@ -309,6 +342,8 @@ onUnmounted(() => {
 }
 
 .mobile-search-card {
+  position: relative;
+  z-index: 2;
   width: 100%;
   max-width: 32rem;
   /* 卡片本身不裁剪，结果列表在自己的容器里滚动，白底始终包住结果 */
@@ -318,11 +353,16 @@ onUnmounted(() => {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
 }
 
+/* 移动端弹层宽度只有一列，结果列表直接跟随卡片，不再叠出第二块白底 */
+.mobile-search-card .search-results {
+  max-height: min(62vh, 460px);
+}
+
 /* 移动端：底栏是 fixed，给页面留出足够的下边距，footer 不再被压住 */
 @media (max-width: 768px) {
   .main-layout {
-    /* 底栏实际高度 + 安全区，再留 12px 呼吸 */
-    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 12px);
+    /* 底栏实际高度 + 安全区，再给右下角外观按钮留出空间，页脚版权不被压住 */
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 64px);
   }
 
   .footer {
@@ -330,6 +370,8 @@ onUnmounted(() => {
   }
 
   .footer-text {
+  padding-right: 96px;
+  padding-left: 96px;
     text-align: center;
     padding-bottom: 0.25rem;
   }

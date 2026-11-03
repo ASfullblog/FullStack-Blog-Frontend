@@ -1,39 +1,37 @@
 <template>
   <!-- 导航菜单组件 -->
-  <nav :class="[
-    'flex items-center',
-    isMobile ? 'flex-1 justify-center' : 'flex-1 justify-center'
-  ]">
+  <!-- 不用 flex-1：中间留白由 headernav mx-auto 撑开，避免导航被挤成每字一行 -->
+  <nav class="flex items-center">
     <ul :class="[
       'flex items-center',
       isMobile ? 'space-x-4' : 'space-x-6'
     ]">
-      <li>
+      <li class="shrink-0">
         <router-link to="/" class="nav-link" :class="{ active: isActive('/') }">
           首页
         </router-link>
       </li>
-      <li>
+      <li class="shrink-0">
         <router-link to="/archive" class="nav-link" :class="{ active: isActive('/archive') }">
           归档
         </router-link>
       </li>
-      <li>
+      <li class="shrink-0">
         <router-link to="/categories" class="nav-link" :class="{ active: isActive('/categories') }">
           分类
         </router-link>
       </li>
-      <li>
+      <li class="shrink-0">
         <router-link to="/about" class="nav-link" :class="{ active: isActive('/about') }">
           关于我
         </router-link>
       </li>
-      <li>
+      <li class="shrink-0">
         <router-link to="/stats" class="nav-link" :class="{ active: isActive('/stats') }">
           数据统计
         </router-link>
       </li>
-      <li>
+      <li class="shrink-0">
         <router-link to="/games" class="nav-link" :class="{ active: isActive('/games') }">
           小游戏
         </router-link>
@@ -76,6 +74,7 @@ const isActive = (path: string): boolean => {
   position: relative;
   display: inline-block;
   padding: 6px 0;
+  white-space: nowrap;
   font-size: 14px;
   color: var(--text-secondary, #5c5c58);
   transition: color 0.16s ease;

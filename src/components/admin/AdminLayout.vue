@@ -1,83 +1,60 @@
 <template>
   <div class="admin-layout">
-    <aside class="sidebar">
+    <!-- 移动端：侧栏改为抽屉，遮罩点击关闭 -->
+    <Transition name="mask-fade">
+      <div
+        v-if="isMobile && sidebarOpen"
+        class="sidebar-mask"
+        aria-hidden="true"
+        @click="sidebarOpen = false"
+      ></div>
+    </Transition>
+
+    <aside class="sidebar" :class="{ 'is-open': sidebarOpen }">
       <div class="sidebar-header">
-        <h1 class="text-xl font-bold text-white">管理后台</h1>
+        <h1 class="sidebar-brand">管理后台</h1>
+        <button
+          v-if="isMobile"
+          type="button"
+          class="sidebar-close"
+          aria-label="关闭菜单"
+          @click="sidebarOpen = false"
+        >
+          <AppIcon name="close" :size="18" :stroke="2" />
+        </button>
       </div>
 
       <nav class="sidebar-nav">
         <ul>
-          <li>
-            <router-link to="/admin/dashboard" class="nav-item" active-class="active">
-              <el-icon class="nav-icon"><Management /></el-icon>
-              <span>仪表盘</span>
-            </router-link>
-          </li>
-          <li>
-            <router-link to="/admin/posts" class="nav-item" active-class="active">
-              <el-icon class="nav-icon"><Document /></el-icon>
-              <span>文章管理</span>
-            </router-link>
-          </li>
-          <li>
-            <router-link to="/admin/categories" class="nav-item" active-class="active">
-              <el-icon class="nav-icon"><Collection /></el-icon>
-              <span>分类管理</span>
-            </router-link>
-          </li>
-          <li>
-            <router-link to="/admin/games" class="nav-item" active-class="active">
-              <el-icon class="nav-icon"><Grid /></el-icon>
-              <span>小游戏管理</span>
-            </router-link>
-          </li>
-          <li>
-            <router-link to="/admin/comments" class="nav-item" active-class="active">
-              <el-icon class="nav-icon"><ChatDotRound /></el-icon>
-              <span>评论审核</span>
-              <el-badge v-if="pendingCommentCount > 0" :value="pendingCommentCount" class="comment-badge" />
-            </router-link>
-          </li>
-          <li>
-            <router-link to="/admin/users" class="nav-item" active-class="active">
-              <el-icon class="nav-icon"><UserFilled /></el-icon>
-              <span>用户管理</span>
-            </router-link>
-          </li>
-          <li>
-            <router-link to="/admin/settings" class="nav-item" active-class="active">
-              <el-icon class="nav-icon"><Setting /></el-icon>
-              <span>系统设置</span>
-            </router-link>
-          </li>
-          <li>
-            <router-link to="/admin/announcement" class="nav-item" active-class="active">
-              <el-icon class="nav-icon"><Notification /></el-icon>
-              <span>发布公告</span>
+          <li v-for="item in navItems" :key="item.to">
+            <router-link :to="item.to" class="nav-item" active-class="active" @click="closeOnMobile">
+              <AppIcon class="nav-icon" :name="item.icon" :size="18" :stroke="1.7" />
+              <span class="nav-label">{{ item.label }}</span>
+              <span v-if="item.to === '/admin/comments' && pendingCommentCount > 0" class="nav-badge">
+                {{ pendingCommentCount > 99 ? '99+' : pendingCommentCount }}
+              </span>
             </router-link>
           </li>
         </ul>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="user-info" @click="showUserMenu = !showUserMenu">
-          <img v-if="user?.username" :src="resolveAvatar(user)" :alt="user.username" class="user-avatar">
-          <div v-else class="user-avatar-placeholder">
-            {{ user?.username?.charAt(0) || 'U' }}
-          </div>
+        <button type="button" class="user-info" @click="showUserMenu = !showUserMenu">
+          <img v-if="user?.username" :src="resolveAvatar(user)" :alt="user.username" class="user-avatar" />
+          <span v-else class="user-avatar-placeholder">{{ user?.username?.charAt(0) || 'U' }}</span>
           <span class="user-name">{{ user?.username || '管理员' }}</span>
-          <el-icon class="arrow-icon"><ArrowDown /></el-icon>
-        </div>
+          <AppIcon class="arrow-icon" name="chevron-up" :size="14" :stroke="2" />
+        </button>
 
         <div v-if="showUserMenu" class="user-menu">
-          <div class="menu-item" @click="goToFrontend">
-            <el-icon><TopLeft /></el-icon>
+          <button type="button" class="menu-item" @click="goToFrontend">
+            <AppIcon name="external" :size="16" :stroke="1.7" />
             <span>返回前台</span>
-          </div>
-          <div class="menu-item" @click="handleLogout">
-            <el-icon><SwitchButton /></el-icon>
+          </button>
+          <button type="button" class="menu-item" @click="handleLogout">
+            <AppIcon name="logout" :size="16" :stroke="1.7" />
             <span>退出登录</span>
-          </div>
+          </button>
         </div>
       </div>
     </aside>
@@ -85,10 +62,26 @@
     <main class="main-content">
       <header class="main-header">
         <div class="header-left">
-          <button class="toggle-sidebar" @click="toggleSidebar">
-            <el-icon><Menu /></el-icon>
+          <button
+            v-if="isMobile"
+            type="button"
+            class="toggle-sidebar"
+            aria-label="打开菜单"
+            @click="sidebarOpen = true"
+          >
+            <AppIcon name="menu" :size="20" :stroke="1.8" />
           </button>
           <h2 class="page-title">{{ pageTitle }}</h2>
+        </div>
+
+        <!-- 移动端把「返回前台 / 退出」放进顶栏，不必再开侧栏 -->
+        <div v-if="isMobile" class="header-right">
+          <router-link to="/" class="header-link" aria-label="返回前台">
+            <AppIcon name="external" :size="16" :stroke="1.7" />
+          </router-link>
+          <button type="button" class="header-link" aria-label="退出登录" @click="handleLogout">
+            <AppIcon name="logout" :size="16" :stroke="1.7" />
+          </button>
         </div>
       </header>
 
@@ -100,36 +93,42 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import {
-  ArrowDown,
-  ChatDotRound,
-  Collection,
-  Document,
-  Grid,
-  Management,
-  Menu,
-  Notification,
-  Setting,
-  SwitchButton,
-  TopLeft,
-  UserFilled
-} from '@element-plus/icons-vue'
+/**
+ * 管理后台布局
+ * - 桌面：固定侧栏（232px），内容区独立滚动
+ * - 手机 / 平板：侧栏收成抽屉，顶栏汉堡按钮打开，遮罩或选中即关闭
+ * - 图标全部走 AppIcon；侧栏保持深色（后台惯例），强调色统一一个灰蓝，不做霓虹渐变
+ */
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import AppIcon from '../icons/AppIcon.vue'
 import request from '../../utils/request'
 import { resolveAvatar } from '../../utils/avatar'
 import { useThemeStore } from '../../stores/themeStore'
 import { useUserStore } from '../../stores/userStore'
 
-const isSidebarCollapsed = ref(false)
 const showUserMenu = ref(false)
 const pendingCommentCount = ref(0)
+const sidebarOpen = ref(false)
+const isMobile = ref(window.innerWidth <= 1024)
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const themeStore = useThemeStore()
 
 const user = computed(() => userStore.currentUser)
+
+const navItems = [
+  { to: '/admin/dashboard', label: '仪表盘', icon: 'chart' },
+  { to: '/admin/posts', label: '文章管理', icon: 'document' },
+  { to: '/admin/categories', label: '分类管理', icon: 'folder' },
+  { to: '/admin/games', label: '小游戏管理', icon: 'grid' },
+  { to: '/admin/comments', label: '评论审核', icon: 'message' },
+  { to: '/admin/users', label: '用户管理', icon: 'users' },
+  { to: '/admin/settings', label: '系统设置', icon: 'settings' },
+  { to: '/admin/announcement', label: '发布公告', icon: 'bell' }
+]
 
 const titleMap: Record<string, string> = {
   '/admin/dashboard': '仪表盘',
@@ -137,11 +136,12 @@ const titleMap: Record<string, string> = {
   '/admin/categories': '分类管理',
   '/admin/games': '小游戏管理',
   '/admin/comments': '评论审核',
+  '/admin/users': '用户管理',
   '/admin/settings': '系统设置',
   '/admin/announcement': '发布公告'
 }
 
-const pageTitle = computed(() => titleMap[router.currentRoute.value.path] || '管理后台')
+const pageTitle = computed(() => titleMap[route.path] || '管理后台')
 
 const fetchPendingCommentCount = async () => {
   try {
@@ -166,8 +166,9 @@ const stopPolling = () => {
   }
 }
 
-const toggleSidebar = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value
+/** 移动端选中菜单后收起抽屉 */
+const closeOnMobile = () => {
+  if (isMobile.value) sidebarOpen.value = false
 }
 
 const goToFrontend = () => {
@@ -176,17 +177,34 @@ const goToFrontend = () => {
 }
 
 const handleLogout = () => {
+  showUserMenu.value = false
   userStore.logout()
   themeStore.setLoginStatus(false)
   router.push('/')
 }
 
+const handleResize = () => {
+  isMobile.value = window.innerWidth <= 1024
+  if (!isMobile.value) sidebarOpen.value = false
+}
+
+// 路由变化时收起抽屉与用户菜单
+watch(
+  () => route.fullPath,
+  () => {
+    sidebarOpen.value = false
+    showUserMenu.value = false
+  }
+)
+
 onMounted(() => {
   startPolling()
+  window.addEventListener('resize', handleResize)
 })
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
   stopPolling()
+  window.removeEventListener('resize', handleResize)
 })
 </script>
 
@@ -194,166 +212,351 @@ onUnmounted(() => {
 .admin-layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background-color: var(--bg-primary, #f5f7fa);
 }
 
+/* ---------- 侧栏 ---------- */
 .sidebar {
-  width: 240px;
-  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-  color: #e5e7eb;
-  position: relative;
-  z-index: 2;
   display: flex;
+  flex: none;
   flex-direction: column;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  width: 232px;
+  background: #171a20;
+  color: #c8ccd2;
+  transition: transform 0.24s ease;
 }
 
 .sidebar-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid #374151;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid #262b33;
+}
+
+.sidebar-brand {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f2f3f5;
+  letter-spacing: 0.02em;
+}
+
+.sidebar-close {
+  display: inline-flex;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #a5abb4;
+  cursor: pointer;
+}
+
+.sidebar-close:hover {
+  background: #262b33;
+  color: #fff;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 1rem 0;
+  overflow-y: auto;
+  padding: 10px 0;
 }
 
 .sidebar-nav ul {
-  list-style: none;
-  padding: 0;
   margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1.5rem;
-  margin: 0.25rem 0.75rem;
-  color: #e5e7eb;
+  gap: 10px;
+  margin: 1px 10px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  color: #c8ccd2;
+  font-size: 14px;
   text-decoration: none;
-  border-radius: 10px;
-  transition: all 0.3s ease;
+  transition: background-color 0.14s ease, color 0.14s ease;
 }
 
 .nav-item:hover {
-  background-color: #374151;
-  transform: translateX(4px);
+  background: #23272f;
+  color: #f2f3f5;
 }
 
+/* 选中态：淡底 + 左侧短竖条，不用整条渐变 */
 .nav-item.active {
-  background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
-  color: #fff;
+  position: relative;
+  background: #262b34;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  width: 2px;
+  height: 16px;
+  border-radius: 1px;
+  background: #6e9ec9;
+  transform: translateY(-50%);
 }
 
 .nav-icon {
-  font-size: 1.2rem;
+  flex: none;
+  color: #8d949e;
+}
+
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon {
+  color: #cfe1f0;
+}
+
+.nav-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-badge {
+  flex: none;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #b4453a;
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
 }
 
 .sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid #374151;
   position: relative;
+  padding: 10px;
+  border-top: 1px solid #262b33;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #c8ccd2;
+  font-size: 13px;
+  text-align: left;
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.5rem;
 }
 
 .user-info:hover {
-  background-color: #374151;
+  background: #23272f;
 }
 
 .user-avatar,
 .user-avatar-placeholder {
-  width: 2.5rem;
-  height: 2.5rem;
+  flex: none;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
+  object-fit: cover;
 }
 
 .user-avatar-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #3b82f6;
-  color: #fff;
-  font-weight: 700;
+  background: #2f3a47;
+  color: #dbe4ee;
+  font-weight: 600;
 }
 
 .user-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arrow-icon {
+  color: #8d949e;
 }
 
 .user-menu {
   position: absolute;
-  left: 1rem;
-  right: 1rem;
-  bottom: calc(100% - 0.25rem);
-  background: #1f2937;
-  border: 1px solid #374151;
-  border-radius: 0.75rem;
-  overflow: hidden;
+  left: 10px;
+  right: 10px;
+  bottom: calc(100% - 2px);
   z-index: 10;
+  padding: 4px;
+  border: 1px solid #2b313a;
+  border-radius: 8px;
+  background: #1d2127;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #d3d7dd;
+  font-size: 13px;
+  text-align: left;
   cursor: pointer;
 }
 
 .menu-item:hover {
-  background: #374151;
+  background: #262b33;
+  color: #fff;
 }
 
+/* ---------- 主区域 ---------- */
 .main-content {
-  flex: 1;
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-width: 0;
   overflow: hidden;
-  position: relative;
-  z-index: 2;
 }
 
 .main-header {
-  height: 3.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.5rem;
-  background: var(--bg-secondary, #fff);
+  gap: 8px;
+  height: 52px;
+  padding: 0 20px;
   border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-primary, #fff);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 10px;
+  min-width: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.header-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary, #5c5c58);
+  cursor: pointer;
+}
+
+.header-link:hover {
+  background: var(--bg-secondary, #f1f1ee);
+  color: var(--text-color, #1b1b1a);
 }
 
 .toggle-sidebar {
-  border: none;
-  background: none;
+  display: inline-flex;
+  padding: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-color, #1b1b1a);
   cursor: pointer;
-  font-size: 1.25rem;
+}
+
+.toggle-sidebar:hover {
+  background: var(--bg-secondary, #f1f1ee);
 }
 
 .page-title {
   margin: 0;
-  font-size: 1.25rem;
+  overflow: hidden;
+  font-size: 16px;
   font-weight: 600;
+  color: var(--text-color, #1b1b1a);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .content-wrapper {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem;
+  overscroll-behavior: contain;
+  padding: 20px;
+}
+
+/* ---------- 移动端 / 平板：抽屉式侧栏 ---------- */
+.sidebar-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.mask-fade-enter-active,
+.mask-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mask-fade-enter-from,
+.mask-fade-leave-to {
+  opacity: 0;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: 260px;
+    max-width: 82vw;
+    transform: translateX(-100%);
+    box-shadow: 12px 0 32px rgba(0, 0, 0, 0.28);
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .main-header {
+    padding: 0 12px;
+  }
+
+  .content-wrapper {
+    padding: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
 }
 </style>

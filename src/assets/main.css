@@ -29,7 +29,7 @@ body {
 }
 
 .container {
-  max-width: 64rem;
+  /* max-width: 64rem; */
   margin-left: auto;
   margin-right: auto;
   padding-left: 1rem;
@@ -39,7 +39,12 @@ body {
 }
 
 /* 主内容区样式 */
+/* 正文容器承载底色与内边距，见 .main-inner（main 元素本身铺满整宽） */
 main {
+  padding: 0;
+}
+
+.main-inner {
   background-color: var(--card-bg);
   border-radius: 0.5rem;
   box-shadow: 0 1px 2px 0 var(--shadow-color);
@@ -48,7 +53,7 @@ main {
 }
 
 @media (min-width: 768px) {
-  main {
+  .main-inner {
     padding: 2rem;
   }
 }
@@ -457,7 +462,11 @@ h1::after, h2::after, h3::after {
   }
 
   main {
-    @apply p-4 mb-4;
+    @apply mb-4;
+  }
+
+  .main-inner {
+    @apply p-4;
   }
 
   .post-content h1 {

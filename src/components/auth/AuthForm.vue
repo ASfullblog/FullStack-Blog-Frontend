@@ -886,6 +886,14 @@ onMounted(() => {
   background: rgba(255, 159, 159, 0.08);
 }
 
+/* 移动端抽屉内：出错只用红底色 + 底部短线提示，不加描边 */
+@media (max-width: 768px) {
+  .form-section .form-field.error input {
+    border-color: transparent;
+    box-shadow: inset 0 -2px 0 rgba(255, 159, 159, 0.85);
+  }
+}
+
 .form-field.error input:focus {
   box-shadow: 0 0 0 3px rgba(255, 159, 159, 0.1), 0 0 20px rgba(255, 159, 159, 0.2);
 }
@@ -1063,33 +1071,34 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* 提交按钮 - 白色实心背景 + 紫色文字 */
+/* 提交按钮：深靛实心 + 白字。之前白底紫字压在紫背景上，字几乎看不见 */
 .submit-btn {
   width: 80%;
-  padding: 16px 24px;
-  margin-top: 10px;
+  padding: 15px 24px;
   margin: 20px auto 1px;
   border: none;
-  border-radius: 30px;
-  background: white;
-  color: #7c3aed;
+  border-radius: 12px;
+  background: #2a1a5e;
+  color: #ffffff;
   font-size: 16px;
   font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s ease;
+  box-shadow: 0 6px 18px rgba(20, 10, 45, 0.35);
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  transform: translateY(-1px);
+  background: #36206f;
 }
 
 .submit-btn:active:not(:disabled) {
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  transform: translateY(0);
+  background: #22144f;
+}
+
+.submit-btn:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
 .submit-btn:disabled {
@@ -1102,8 +1111,8 @@ onMounted(() => {
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1372,10 +1381,10 @@ onMounted(() => {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
-  /* 移动端输入框 - 幽灵线框风格 */
+  /* 移动端输入框：只留一层极浅底色，不用描边，避免浮动 label 压在边框线上 */
   .form-section .input-wrapper input {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid transparent;
     color: white;
     padding: 14px 40px 14px 44px;
   }
@@ -1385,17 +1394,17 @@ onMounted(() => {
   }
 
   .form-section .input-wrapper input:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: transparent;
   }
 
   .form-section .input-wrapper input:focus {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.8);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1), 0 0 20px rgba(124, 58, 237, 0.3);
+    background: rgba(255, 255, 255, 0.16);
+    border-color: transparent;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
   }
 
-  /* 移动端标签文字 */
+  /* 移动端标签文字：上浮后坐在输入框上沿外侧，不压任何线 */
   .form-section .field-label {
     color: rgba(255, 255, 255, 0.6);
     background: transparent;
@@ -1403,8 +1412,16 @@ onMounted(() => {
 
   .form-section .form-field.focused .field-label,
   .form-section .form-field.filled .field-label {
-    color: white;
-    background: transparent;
+    top: -7px;
+    left: 44px;
+    font-size: 11px;
+    padding: 0;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .form-section .form-field.focused .field-label,
+  .form-section .form-field.filled .field-label {
+    color: rgba(255, 255, 255, 0.9);
   }
 
   /* 移动端图标颜色 */
@@ -1455,23 +1472,21 @@ onMounted(() => {
     border-color: rgba(255, 255, 255, 0.6);
   }
 
-  /* 移动端提交按钮 - 半透明+白色边框风格 */
+  /* 移动端提交按钮：与桌面同一套深底白字，手机上看得清 */
   .form-section .submit-btn {
-    width: 80%;
-    background: rgba(124, 58, 237, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    backdrop-filter: blur(10px);
-    box-shadow: 
-      0 4px 15px rgba(124, 58, 237, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    width: 100%;
+    background: #2a1a5e;
+    border: none;
+    color: #ffffff;
+    box-shadow: 0 6px 18px rgba(20, 10, 45, 0.35);
   }
 
   .form-section .submit-btn:hover:not(:disabled) {
-    background: rgba(124, 58, 237, 0.5);
-    border-color: rgba(255, 255, 255, 0.6);
-    box-shadow: 
-      0 6px 20px rgba(124, 58, 237, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    background: #36206f;
+  }
+
+  .form-section .submit-btn:active:not(:disabled) {
+    background: #22144f;
   }
 
   /* 移动端切换提示 */

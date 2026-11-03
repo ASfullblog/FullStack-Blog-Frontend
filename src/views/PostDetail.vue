@@ -98,15 +98,15 @@
             <h3 class="text-lg font-semibold mb-3">发表评论</h3>
 
             <!-- 未登录时显示登录链接 -->
-            <div v-if="!userStore.isLoggedIn" class="bg-white rounded-lg shadow-md p-4 text-center">
+            <div v-if="!userStore.isLoggedIn" class="pd-comment-box text-center">
               <p class="mb-4">请登录后发表评论</p>
-              <router-link :to="{ path: '/login', query: { redirect: `/post/${slug}` } }" class="inline-block px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors duration-300">
+              <router-link :to="{ path: '/login', query: { redirect: `/post/${slug}` } }" class="pd-login-btn">
                 去登录
               </router-link>
             </div>
 
             <!-- 已登录时显示评论输入框 -->
-            <div v-else class="bg-white rounded-lg shadow-md p-4">
+            <div v-else class="pd-comment-box">
               <div class="flex items-center mb-3">
                 <img :src="resolveAvatar(userStore.currentUser)" :alt="userStore.currentUser?.username" class="w-8 h-8 rounded-full mr-2">
                 <span class="font-medium">{{ userStore.currentUser?.username }}</span>
@@ -186,7 +186,7 @@
         </div>
 
         <!-- 作者信息 -->
-        <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="pd-side-card mb-6">
           <h3 class="text-lg font-bold mb-3">作者信息</h3>
           <div class="flex items-center mb-3">
             <img :src="resolveAvatar(post.author)" :alt="post.author.username" class="w-12 h-12 rounded-full mr-3">
@@ -201,7 +201,7 @@
         </div>
 
         <!-- 相关文章 -->
-        <div class="bg-white rounded-lg shadow-md p-4">
+        <div class="pd-side-card">
           <h3 class="text-lg font-bold mb-3">相关文章</h3>
           <ul class="space-y-3" v-if="relatedPosts.length > 0">
             <li v-for="relatedPost in relatedPosts" :key="relatedPost.id">
@@ -454,13 +454,24 @@ const extractToc = (content: string): void => {
 
   // 延迟添加ID到标题元素
   nextTick(() => {
-    if (contentRef.value) {
-      const headings = contentRef.value.querySelectorAll('h1, h2, h3, h4, h5, h6')
-      headings.forEach((heading) => {
-        const text = heading.textContent || ''
-        const id = generateId(text)
-        heading.id = id
-      })
+    if (!contentRef.value) return
+    const headings = Array.from(contentRef.value.querySelectorAll('h1, h2, h3, h4, h5, h6')) as HTMLElement[]
+    const fromDom: TocItem[] = []
+    headings.forEach((heading) => {
+      const text = (heading.textContent || '').trim()
+      if (!text) return
+      let id = generateId(text)
+      if (!id) id = `heading-${fromDom.length + 1}`
+      // 同文本标题去重，避免锚点互相覆盖
+      if (document.getElementById(id) && document.getElementById(id) !== heading) {
+        id = `${id}-${fromDom.length + 1}`
+      }
+      heading.id = id
+      fromDom.push({ id, text, level: Number(heading.tagName.slice(1)) || 2 })
+    })
+    // markdown 里没写 `##` 语法的正文（富文本粘贴、HTML 内容）也能出目录
+    if (items.length < 2 && fromDom.length >= 2) {
+      tocItems.value = fromDom.map((h) => ({ ...h, level: Math.min(Math.max(h.level, 2), 4) }))
     }
   })
 }
@@ -809,21 +820,79 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* 去登录：跟随主题主色，不用默认亮蓝 */
+.pd-login-btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: var(--radius-control, 8px);
+  background: var(--accent-color);
+  color: var(--accent-contrast, #fff);
+  font-size: 14px;
+  line-height: 1.4;
+  transition: filter 0.16s ease;
+}
+
+.pd-login-btn:hover {
+  color: var(--accent-contrast, #fff);
+  filter: brightness(1.08);
+}
+
+/* 去登录：跟随主题主色，不用默认亮蓝 */
+.pd-login-btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: var(--radius-control, 8px);
+  background: var(--accent-color);
+  color: var(--accent-contrast, #fff);
+  font-size: 14px;
+  line-height: 1.4;
+  transition: filter 0.16s ease;
+}
+
+.pd-login-btn:hover {
+  color: var(--accent-contrast, #fff);
+  filter: brightness(1.08);
+}
+
+/* 评论输入区：同样跟随主题 */
+.pd-comment-box {
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card, 10px);
+  background: var(--card-bg);
+  color: var(--text-color, var(--text-primary));
+}
+
+.pd-comment-box textarea {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-color, var(--text-primary));
+  border-radius: var(--radius-control, 8px);
+}
+
+/* 侧栏卡片：跟随主题，不再写死白底 */
+.pd-side-card {
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card, 10px);
+  background: var(--card-bg);
+}
+
 /* 目录样式 */
 .toc {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card, 10px);
+  padding: 18px;
 }
 
 .toc-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #667eea;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-color, var(--text-primary));
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .toc-list {
@@ -838,18 +907,18 @@ onUnmounted(() => {
 
 .toc-link {
   display: block;
-  color: #666;
+  color: var(--text-secondary);
   text-decoration: none;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border-radius: 6px;
-  transition: all 0.3s ease;
+  transition: background-color 0.14s ease, color 0.14s ease;
   font-size: 14px;
+  line-height: 1.6;
 }
 
 .toc-link:hover {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-  color: #667eea;
-  transform: translateX(5px);
+  background: var(--bg-secondary);
+  color: var(--accent-color);
 }
 
 .toc-level-1 {
@@ -917,6 +986,72 @@ onUnmounted(() => {
   }
   50% {
     transform: scale(1.1);
+  }
+}
+/* ---------- 移动端/平板：正文下方的目录与作者卡 ---------- */
+.pd-mobile-cards {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .pd-mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 1.25rem 0;
+  }
+
+  .pd-card {
+    padding: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-card, 10px);
+    background: var(--card-bg);
+  }
+
+  .pd-card-title {
+    margin: 0 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color, var(--text-primary));
+    letter-spacing: 0.02em;
+  }
+
+  .pd-toc .toc-list {
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  .pd-author-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pd-author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .pd-author-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-color, var(--text-primary));
+  }
+
+  .pd-author-role {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .pd-author-bio {
+    margin: 10px 0 0;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
   }
 }
 </style>
