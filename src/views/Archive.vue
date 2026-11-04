@@ -40,7 +40,6 @@
             </svg>
           </button>
           <span class="year-rule"></span>
-          <span class="year-hint">{{ collapsed[group.year] ? '展开' : '收起' }}</span>
         </div>
 
         <div v-show="!collapsed[group.year]" class="year-body">

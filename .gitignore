@@ -114,3 +114,8 @@ coverage/
 
 .shots/
 src/views/_pd_toc_patch.mjs
+
+# local screenshot / temp artifacts
+shots5/
+shots6/
+.tmp-shot.mjs

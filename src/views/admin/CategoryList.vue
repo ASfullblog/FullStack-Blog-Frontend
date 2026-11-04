@@ -75,7 +75,7 @@
           <el-input v-model="categoryForm.name" placeholder="请输入分类名称" />
         </el-form-item>
         <el-form-item label="Slug" prop="slug">
-          <el-input v-model="categoryForm.slug" placeholder="请输入分类slug" />
+          <el-input v-model="categoryForm.slug" disabled placeholder="保存后自动生成，无需填写" />
         </el-form-item>
         <el-form-item label="父分类">
           <el-select v-model="categoryForm.parentId" placeholder="请选择父分类" clearable>
@@ -133,8 +133,7 @@ const categoryRules = {
     { min: 1, max: 50, message: '分类名称长度在 1 到 50 个字符之间', trigger: 'blur' }
   ],
   slug: [
-    { required: true, message: '请输入分类slug', trigger: 'blur' },
-    { min: 1, max: 100, message: '分类slug长度在 1 到 100 个字符之间', trigger: 'blur' }
+    { required: false, message: '分类slug由系统自动生成', trigger: 'blur' }
   ]
 }
 
@@ -170,18 +169,16 @@ const handleSaveCategory = async () => {
     if (valid) {
       try {
         if (isEditCategory.value) {
-          // 编辑分类
+          // 编辑分类（slug 由后端根据 name 自动生成）
           await request.put(`/categories/${categoryForm.id}`, {
             name: categoryForm.name,
-            slug: categoryForm.slug,
             parentId: categoryForm.parentId
           })
           ElMessage.success('分类更新成功')
         } else {
-          // 添加分类
+          // 添加分类（slug 由后端自动生成）
           await request.post('/categories', {
             name: categoryForm.name,
-            slug: categoryForm.slug,
             parentId: categoryForm.parentId
           })
           ElMessage.success('分类添加成功')
