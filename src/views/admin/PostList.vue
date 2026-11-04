@@ -1104,7 +1104,10 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
   /* 工具栏容器允许换行，所有按钮都完整显示 */
   .post-form :deep(.md-editor-toolbar-wrapper) {
     padding: 4px 6px;
-    overflow: visible;
+    /* 关键：库默认 overflow-x:auto 会把超宽工具栏横向裁剪（且滚动条隐藏）。
+       换行展开需要 overflow-x:visible，让 wrapper 随内容长高 */
+    overflow-x: visible;
+    overflow-y: visible;
   }
 
   .post-form :deep(.md-editor-toolbar) {
@@ -1118,16 +1121,16 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
     overflow: visible;
   }
 
-  .post-form :deep(.md-editor-toolbar > li) {
-    flex: none;
-    margin: 0;
-  }
-
-  /* 各按钮组（li 内 ul）也允许换行 */
-  .post-form :deep(.md-editor-toolbar ul) {
+  /* 真实结构：.md-editor-toolbar 是 div（space-between）→ 内分 left/right 两个 div，
+     所有按钮是 .md-editor-toolbar-item（div），并不存在 li/ul。要让按钮换行，
+     必须让 left/right 分组各自 flex-wrap，并让分组占满整行。 */
+  .post-form :deep(.md-editor-toolbar-left),
+  .post-form :deep(.md-editor-toolbar-right) {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    flex: 1 1 100%;
+    gap: 2px 0;
     height: auto;
   }
 
@@ -1195,6 +1198,11 @@ onBeforeUnmount(() => window.removeEventListener('resize', onResize))
     flex-wrap: wrap;
     row-gap: 4px;
     overflow: visible;
+  }
+
+  .post-form :deep(.md-editor-toolbar-left),
+  .post-form :deep(.md-editor-toolbar-right) {
+    flex-wrap: wrap;
   }
 
   .post-form :deep(.md-editor-toolbar-item) {
